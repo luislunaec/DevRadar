@@ -1,0 +1,1001 @@
+[
+    {
+        "id": 1,
+        "titulo": "Desarrollador de software",
+        "salario_detectado": "$1212",
+        "link": "https://ec.jooble.org/desc/2223819449468853358?ckey=programador&rgn=1389&pos=25&elckey=8380038133676993176&pageType=8&p=2&sid=-5490044999960247079&jobAge=281&relb=110&brelb=110&bscr=321.61832&scr=321.61832000000004&iid=-4975800782399433400",
+        "skills_detectadas": [
+            "Java",
+            "TypeScript",
+            ".NET",
+            "Angular",
+            "Spring",
+            "AWS",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 2,
+        "titulo": "QA senior Quito",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-597074596128140480?ckey=programador&rgn=1389&pos=44&elckey=8380038133676993176&pageType=8&p=3&sid=-5490044999960247079&jobAge=65&relb=100&brelb=100&bscr=295.19568&scr=295.19568&iid=3347899689003556674",
+        "skills_detectadas": [
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 3,
+        "titulo": "Scrum Master",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/8754349743190968720?ckey=programador&rgn=1389&pos=60&elckey=8380038133676993176&pageType=8&p=3&sid=-5490044999960247079&jobAge=431&relb=100&brelb=100&bscr=287.89023&scr=287.89023&iid=436171542845229394",
+        "skills_detectadas": [
+            "Excel",
+            "Power BI",
+            "Scrum",
+            "Agile"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 4,
+        "titulo": "AI Automation Tutor",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-4181116370778718639?ckey=programador&rgn=1389&pos=61&elckey=8380038133676993176&pageType=8&p=4&sid=-5490044999960247079&jobAge=209&relb=100&brelb=100&bscr=287.49222&scr=287.49222&iid=-842720886196931387",
+        "skills_detectadas": [
+            "Azure",
+            "AI",
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 5,
+        "titulo": "Desarrollador Java + IBM",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-2483021942894851229?ckey=programador&rgn=1389&pos=63&elckey=8380038133676993176&pageType=8&p=4&sid=-5490044999960247079&jobAge=239&relb=100&brelb=100&bscr=284.68488&scr=284.68488&iid=6966309896298741551",
+        "skills_detectadas": [
+            "Java",
+            "Go",
+            "Angular",
+            "SQL",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 6,
+        "titulo": "DevOps Senior en Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-8375297259146356703?ckey=programador&rgn=1389&pos=76&elckey=8380038133676993176&pageType=8&p=4&sid=-5490044999960247079&jobAge=72&relb=100&brelb=100&bscr=276.63718&scr=276.63718&iid=-8049063467698910123",
+        "skills_detectadas": [
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 7,
+        "titulo": "DevOps SemiSenior en Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/3774382509648473263?ckey=programador&rgn=1389&pos=78&elckey=8380038133676993176&pageType=8&p=4&sid=-5490044999960247079&jobAge=65&relb=100&brelb=100&bscr=273.8119&scr=273.8119&iid=-720159299541353925",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 8,
+        "titulo": "Desarrollador Angular y Typescript en Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/4143709693503540958?ckey=programador&rgn=1389&pos=80&elckey=8380038133676993176&pageType=8&p=4&sid=-5490044999960247079&jobAge=65&relb=100&brelb=100&bscr=273.41544&scr=273.41544&iid=4325823710881475832",
+        "skills_detectadas": [
+            "TypeScript",
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 9,
+        "titulo": "Ingenieroa de Datos Senior Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/7354445627826546830?ckey=programador&rgn=1389&pos=81&elckey=8380038133676993176&pageType=8&p=5&sid=-5490044999960247079&jobAge=65&relb=100&brelb=100&bscr=273.41544&scr=273.41544&iid=-6275749830767248664",
+        "skills_detectadas": [
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 10,
+        "titulo": "Tutor de Análisis de Datos LATAM",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-7111035834064342172?ckey=programador&rgn=1389&pos=102&elckey=8380038133676993176&pageType=8&p=6&sid=-5490044999960247079&jobAge=113&relb=100&brelb=100&bscr=265.2569&scr=265.2569&iid=1990405685487993366",
+        "skills_detectadas": [
+            "Excel",
+            "Power BI",
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 11,
+        "titulo": "GERENTE DE DESARROLLO Y MANTENIMIENTO DE APLICACIONES",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-7436325373944810552?ckey=programador&rgn=1389&pos=113&elckey=8380038133676993176&pageType=8&p=6&sid=-5490044999960247079&jobAge=233&relb=100&brelb=100&bscr=261.65942&scr=261.65942&iid=2090026543527572314",
+        "skills_detectadas": [
+            "Java",
+            "C#",
+            "Angular",
+            "SQL"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 12,
+        "titulo": "Desarrolladora Backend Senior (NestJS y TypeScript)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/7325571052648311693?ckey=programador&rgn=1389&pos=118&elckey=8380038133676993176&pageType=8&p=6&sid=-5490044999960247079&jobAge=65&relb=100&brelb=100&bscr=260.45337&scr=260.45337&iid=8474977182530810625",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 13,
+        "titulo": "Arquitecto/a Empresarial Cloud- Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-1119457231879909774?ckey=programador&rgn=1389&pos=119&elckey=8380038133676993176&pageType=8&p=6&sid=-5490044999960247079&jobAge=72&relb=100&brelb=100&bscr=260.36444&scr=260.36444&iid=-2412759867070101172",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 14,
+        "titulo": "Arquitecto/a de Datos Semisenior - Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-6946830254491997241?ckey=programador&rgn=1389&pos=120&elckey=8380038133676993176&pageType=8&p=6&sid=-5490044999960247079&jobAge=72&relb=100&brelb=100&bscr=260.36444&scr=260.36444&iid=-5756701774769621693",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 15,
+        "titulo": "Desarrollador/a Java Springboot - Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/5505528001163572799?ckey=programador&rgn=1389&pos=121&elckey=8380038133676993176&pageType=8&p=7&sid=-5490044999960247079&jobAge=72&relb=100&brelb=100&bscr=260.36444&scr=260.36444&iid=9171048596277266059",
+        "skills_detectadas": [
+            "Java",
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 16,
+        "titulo": "Especialista en Sistemas Automatización e Integraciones Digitales",
+        "salario_detectado": "500 USD",
+        "link": "https://ec.jooble.org/desc/2555569297916452959?ckey=programador&rgn=1389&pos=122&elckey=8380038133676993176&pageType=8&p=7&sid=-5490044999960247079&jobAge=257&relb=110&brelb=110&bscr=260.26785&scr=260.26785&iid=-3864424960021453269",
+        "skills_detectadas": [
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 17,
+        "titulo": "Ingeniero de Datos SR | Quito | Híbrido",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/2167545475411895089?ckey=programador&rgn=1389&pos=126&elckey=8380038133676993176&pageType=8&p=7&sid=-5490044999960247079&jobAge=185&relb=100&brelb=100&bscr=259.38058&scr=259.38058&iid=-7967464788471804891",
+        "skills_detectadas": [
+            "Excel",
+            "Power BI",
+            "Scrum"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 18,
+        "titulo": "Diseñadora Web (Wordpress y Shopify) QUITO",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-6202715099714728387?ckey=programador&rgn=1389&pos=129&elckey=8380038133676993176&pageType=8&p=7&sid=-5490044999960247079&jobAge=161&relb=100&brelb=100&bscr=258.16708&scr=258.16708&iid=3741712200914780657",
+        "skills_detectadas": [
+            "C#"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 19,
+        "titulo": "Senior Data Scientist (Sector Bancario)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/2694464716746505061?ckey=programador&rgn=1389&pos=130&elckey=8380038133676993176&pageType=8&p=7&sid=-5490044999960247079&jobAge=62&relb=100&brelb=100&bscr=257.78342&scr=257.78342&iid=-7718413296259814455",
+        "skills_detectadas": [
+            "Angular",
+            "Azure",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 20,
+        "titulo": "Scrum MasterGerente de proyectos Quito",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-7933526012178726802?ckey=programador&rgn=1389&pos=133&elckey=8380038133676993176&pageType=8&p=7&sid=-5490044999960247079&jobAge=449&relb=100&brelb=100&bscr=256.64917&scr=256.64917&iid=-6337282767543457464",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 21,
+        "titulo": "Arquitectoa de Datos",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-4009945612027023229?ckey=programador&rgn=1389&pos=134&elckey=8380038133676993176&pageType=8&p=7&sid=-5490044999960247079&jobAge=905&relb=100&brelb=100&bscr=256.45337&scr=256.45337&iid=-5300610338566545969",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 22,
+        "titulo": "Agile Delivery Manager | Presencial | Quito",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-1480144454013820855?ckey=programador&rgn=1389&pos=137&elckey=8380038133676993176&pageType=8&p=7&sid=-5490044999960247079&jobAge=200&relb=100&brelb=100&bscr=255.90675&scr=255.90675&iid=8633613293752568717",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 23,
+        "titulo": "Data Science Teaching Experts LATAM",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-3065050756857044369?ckey=programador&rgn=1389&pos=140&elckey=8380038133676993176&pageType=8&p=7&sid=-5490044999960247079&jobAge=41&relb=100&brelb=100&bscr=253.63129&scr=253.63129&iid=-3628528079631683333",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 24,
+        "titulo": "Ingeniero DevOps - Sector Financiero/Bancario",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-5684944017605511874?ckey=programador&rgn=1389&pos=142&elckey=8380038133676993176&pageType=8&p=8&sid=-5490044999960247079&jobAge=62&relb=100&brelb=100&bscr=252.35403&scr=252.35403&iid=-1380952368146519080",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 25,
+        "titulo": "QA Tutor",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-1409949528477692138?ckey=programador&rgn=1389&pos=149&elckey=8380038133676993176&pageType=8&p=8&sid=-5490044999960247079&jobAge=2129&relb=100&brelb=100&bscr=250.10059&scr=250.10059&iid=2047570520771621536",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 26,
+        "titulo": "Desarrollador & JAVA",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-5879776620938675795?ckey=programador&rgn=1389&pos=163&elckey=8380038133676993176&pageType=8&p=9&sid=-5490044999960247079&jobAge=1193&relb=100&brelb=100&bscr=245.97223&scr=245.97222999999997&iid=7054953488818529953",
+        "skills_detectadas": [
+            "Java",
+            "Go",
+            "Angular",
+            "SQL",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 27,
+        "titulo": "QA Automatizador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-1853176638219644269?ckey=programador&rgn=1389&pos=166&elckey=8380038133676993176&pageType=8&p=9&sid=-5490044999960247079&jobAge=1049&relb=100&brelb=100&bscr=243.87474&scr=243.87474000000003&iid=-2710914458485028705",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 28,
+        "titulo": "Desarrolladora Senior Angular y TypeScript Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/8507182925602463196?ckey=programador&rgn=1389&pos=167&elckey=8380038133676993176&pageType=8&p=9&sid=-5490044999960247079&jobAge=65&relb=100&brelb=100&bscr=243.39926&scr=243.39926&iid=3974429963945092958",
+        "skills_detectadas": [
+            "TypeScript",
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 29,
+        "titulo": "Gerente de Proyectos Ágiles / Scrum Master - Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/5982277805549910015?ckey=programador&rgn=1389&pos=168&elckey=8380038133676993176&pageType=8&p=9&sid=-5490044999960247079&jobAge=72&relb=100&brelb=100&bscr=243.31593&scr=243.31593&iid=4364036319146036555",
+        "skills_detectadas": [
+            "Scrum"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 30,
+        "titulo": "Analista de Datos Semi Senior en Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-8041498497350908106?ckey=programador&rgn=1389&pos=171&elckey=8380038133676993176&pageType=8&p=9&sid=-5490044999960247079&jobAge=56&relb=100&brelb=100&bscr=242.1153&scr=242.1153&iid=-7329383487501396928",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 31,
+        "titulo": "Data Analysis Course Author (part-time)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-6589086780827801490?ckey=programador&rgn=1389&pos=172&elckey=8380038133676993176&pageType=8&p=9&sid=-5490044999960247079&jobAge=113&relb=100&brelb=100&bscr=241.7636&scr=241.7636&iid=5075644329604018504",
+        "skills_detectadas": [
+            "Go",
+            "English"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 32,
+        "titulo": "QA Teaching Experts LATAM (Part time)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/3936867126861047922?ckey=programador&rgn=1389&pos=178&elckey=8380038133676993176&pageType=8&p=9&sid=-5490044999960247079&jobAge=41&relb=100&brelb=100&bscr=240.70195&scr=240.70195&iid=2813995943087771468",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 33,
+        "titulo": "Data Engineer (Semi Senior/Senior) - Sector Fintech",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/4683438747986473303?ckey=programador&rgn=1389&pos=183&elckey=8380038133676993176&pageType=8&p=10&sid=-5490044999960247079&jobAge=220&relb=100&brelb=100&bscr=238.11195&scr=238.11195&iid=2339950853114131859",
+        "skills_detectadas": [
+            "Angular",
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 34,
+        "titulo": "Desarrollador IA (Aifoundry)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/1233403839306792473?ckey=programador&rgn=1389&pos=187&elckey=8380038133676993176&pageType=8&p=10&sid=-5490044999960247079&jobAge=1608&relb=100&brelb=100&bscr=235.49669&scr=235.49669000000003&iid=-8647494791839060195",
+        "skills_detectadas": [
+            "Java",
+            "Go",
+            "Angular",
+            "SQL",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 35,
+        "titulo": "Ingeniero de Datos Remoto",
+        "salario_detectado": "$450",
+        "link": "https://ec.jooble.org/desc/-748472624738555117?ckey=programador&rgn=1389&pos=190&elckey=8380038133676993176&pageType=8&p=10&sid=-5490044999960247079&jobAge=1385&relb=100&brelb=100&bscr=234.44196&scr=234.44196&iid=8866980501660165919",
+        "skills_detectadas": [
+            "Angular",
+            "SQL",
+            "Oracle",
+            "Docker",
+            "Kubernetes",
+            "Linux",
+            "Excel",
+            "Power BI",
+            "Scrum",
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 36,
+        "titulo": "Desarrollador Semi & JAVA",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-6610366054547576812?ckey=programador&rgn=1389&pos=192&elckey=8380038133676993176&pageType=8&p=10&sid=-5490044999960247079&jobAge=1193&relb=100&brelb=100&bscr=234.44196&scr=234.44196&iid=3158030448257052422",
+        "skills_detectadas": [
+            "Java",
+            "Go",
+            "Angular",
+            "SQL",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 37,
+        "titulo": "Scrum Master Quito",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-4486793021098883987?ckey=programador&rgn=1389&pos=194&elckey=8380038133676993176&pageType=8&p=10&sid=-5490044999960247079&jobAge=1049&relb=100&brelb=100&bscr=234.06793&scr=234.06793&iid=2985493044189749857",
+        "skills_detectadas": [
+            "Excel",
+            "Power BI",
+            "Scrum",
+            "Agile"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 38,
+        "titulo": "Semi Senior / Senior Ingeniero Cloud - Sector Financiero/Bancario",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-4306869779635453996?ckey=programador&rgn=1389&pos=196&elckey=8380038133676993176&pageType=8&p=10&sid=-5490044999960247079&jobAge=222&relb=100&brelb=100&bscr=233.37234&scr=233.37234&iid=6946401690894835654",
+        "skills_detectadas": [
+            "Angular",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 39,
+        "titulo": "Software Engineering Tutor",
+        "salario_detectado": "800 USD",
+        "link": "https://ec.jooble.org/desc/8732939339341562173?ckey=programador&rgn=1389&pos=197&elckey=8380038133676993176&pageType=8&p=10&sid=-5490044999960247079&jobAge=1745&relb=100&brelb=100&bscr=233.02632&scr=233.02632000000003&iid=-8125486775224775439",
+        "skills_detectadas": [
+            "Go",
+            "Oracle",
+            "Azure",
+            "Excel",
+            "AI",
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 40,
+        "titulo": "QA SSR Automatizador | Presencial | Quito",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/2547487856370663332?ckey=programador&rgn=1389&pos=200&elckey=8380038133676993176&pageType=8&p=10&sid=-5490044999960247079&jobAge=689&relb=100&brelb=100&bscr=232.98584&scr=232.98584&iid=2690047360655257942",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 41,
+        "titulo": "Desarrollador JAVA SR",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-2627857376381419563?ckey=programador&rgn=1389&pos=203&elckey=8380038133676993176&pageType=8&p=11&sid=-5490044999960247079&jobAge=2233&relb=100&brelb=100&bscr=232.76147&scr=232.76147&iid=-953848841603636871",
+        "skills_detectadas": [
+            "Java",
+            "Go",
+            "Angular",
+            "SQL",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 42,
+        "titulo": "Data Science Instructor (FT, Remote for US market)",
+        "salario_detectado": "$450",
+        "link": "https://ec.jooble.org/desc/-1578381359291046567?ckey=programador&rgn=1389&pos=207&elckey=8380038133676993176&pageType=8&p=11&sid=-5490044999960247079&jobAge=281&relb=100&brelb=100&bscr=231.41064&scr=231.41063999999997&iid=7859632973944435037",
+        "skills_detectadas": [
+            "Angular",
+            "Azure",
+            "AI",
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 43,
+        "titulo": "Ingeniero de Datos - Semi Senior",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/4859911496811701125?ckey=programador&rgn=1389&pos=208&elckey=8380038133676993176&pageType=8&p=11&sid=-5490044999960247079&jobAge=2105&relb=100&brelb=100&bscr=231.10753&scr=231.10753&iid=6457818464402668905",
+        "skills_detectadas": [
+            "Angular",
+            "SQL",
+            "Oracle",
+            "Docker",
+            "Kubernetes",
+            "Linux",
+            "Excel",
+            "Power BI",
+            "Scrum"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 44,
+        "titulo": "Desarrollador Java + WAS Remoto",
+        "salario_detectado": "$450",
+        "link": "https://ec.jooble.org/desc/1067612538463337990?ckey=programador&rgn=1389&pos=209&elckey=8380038133676993176&pageType=8&p=11&sid=-5490044999960247079&jobAge=1385&relb=100&brelb=100&bscr=231.10753&scr=231.10753&iid=8932090494199279824",
+        "skills_detectadas": [
+            "Java",
+            "Go",
+            "Angular",
+            "SQL",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 45,
+        "titulo": "Desarrollador Java + Kafka",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/6472087297224839084?ckey=programador&rgn=1389&pos=214&elckey=8380038133676993176&pageType=8&p=11&sid=-5490044999960247079&jobAge=1577&relb=100&brelb=100&bscr=229.00725&scr=229.00725&iid=6122497962412773102",
+        "skills_detectadas": [
+            "Java"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 46,
+        "titulo": "Científico de Datos Remoto",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-2134639361819184347?ckey=programador&rgn=1389&pos=215&elckey=8380038133676993176&pageType=8&p=11&sid=-5490044999960247079&jobAge=1361&relb=100&brelb=100&bscr=229.00725&scr=229.00725&iid=7562639699567210633",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 47,
+        "titulo": "Ingeniero de Datos SSR",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/8175349000978942838?ckey=programador&rgn=1389&pos=216&elckey=8380038133676993176&pageType=8&p=11&sid=-5490044999960247079&jobAge=1289&relb=100&brelb=100&bscr=229.00725&scr=229.00725&iid=5776972359109729152",
+        "skills_detectadas": [
+            "SQL",
+            "Oracle",
+            "Docker",
+            "Kubernetes",
+            "Linux",
+            "Excel",
+            "Power BI",
+            "Scrum",
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 48,
+        "titulo": "IT Delivery Manager - Sector Bancario (Cloud & Platforms)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-3825329213053420376?ckey=programador&rgn=1389&pos=221&elckey=8380038133676993176&pageType=8&p=12&sid=-5490044999960247079&jobAge=62&relb=100&brelb=100&bscr=227.24168&scr=227.24168&iid=8880163337619657402",
+        "skills_detectadas": [
+            "Go",
+            "Azure"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 49,
+        "titulo": "Software Engineering Tutor (FT, Remote for US market)",
+        "salario_detectado": "$450",
+        "link": "https://ec.jooble.org/desc/-1186600191474076378?ckey=programador&rgn=1389&pos=225&elckey=8380038133676993176&pageType=8&p=12&sid=-5490044999960247079&jobAge=41&relb=100&brelb=100&bscr=222.70525&scr=222.70525&iid=-5129757514824566416",
+        "skills_detectadas": [
+            "Go",
+            "Angular",
+            "Azure",
+            "Excel",
+            "AI",
+            "English",
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 50,
+        "titulo": "Desarrollador Backend Senior NestJS",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-6175070770272756030?ckey=programador&rgn=1389&pos=228&elckey=8380038133676993176&pageType=8&p=12&sid=-5490044999960247079&jobAge=2808&relb=100&brelb=100&bscr=221.4174&scr=221.4174&iid=-7115358076596268708",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 51,
+        "titulo": "Arquitecto de Software Java + Kafka",
+        "salario_detectado": "800 USD",
+        "link": "https://ec.jooble.org/desc/-7863123236003752663?ckey=programador&rgn=1389&pos=232&elckey=8380038133676993176&pageType=8&p=12&sid=-5490044999960247079&jobAge=1577&relb=100&brelb=100&bscr=221.4174&scr=221.4174&iid=3289054357160178413",
+        "skills_detectadas": [
+            "Java",
+            "Spring",
+            "SQL",
+            "Azure",
+            "Excel",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 52,
+        "titulo": "PASANTE DE SISTEMAS HELP DESK",
+        "salario_detectado": "800 USD",
+        "link": "https://ec.jooble.org/desc/5595482531177364475?ckey=programador&rgn=1389&pos=234&elckey=8380038133676993176&pageType=8&p=12&sid=-5490044999960247079&jobAge=1601&relb=100&brelb=100&bscr=220.79987&scr=220.79987&iid=1355757653668988951",
+        "skills_detectadas": [
+            "English",
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 53,
+        "titulo": "Semi Senior / Senior QA Automation Engineer - Sector Financiero/Bancario",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/878389973632804191?ckey=programador&rgn=1389&pos=238&elckey=8380038133676993176&pageType=8&p=12&sid=-5490044999960247079&jobAge=86&relb=100&brelb=100&bscr=219.85631&scr=219.85631&iid=7024486419641247531",
+        "skills_detectadas": [
+            "Angular",
+            "Azure",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 54,
+        "titulo": "Desarrollador Java Senior | Remoto",
+        "salario_detectado": "$450",
+        "link": "https://ec.jooble.org/desc/597910787522167934?ckey=programador&rgn=1389&pos=243&elckey=8380038133676993176&pageType=8&p=13&sid=-5490044999960247079&jobAge=1217&relb=100&brelb=100&bscr=219.1199&scr=219.11990000000003&iid=-2540141974769286632",
+        "skills_detectadas": [
+            "Java",
+            "Go",
+            "Angular",
+            "SQL",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 55,
+        "titulo": "Relocate to Full Stack Developer",
+        "salario_detectado": "$450",
+        "link": "https://ec.jooble.org/desc/-7901874519657691820?ckey=programador&rgn=1389&pos=245&elckey=8380038133676993176&pageType=8&p=13&sid=-5490044999960247079&jobAge=2081&relb=100&brelb=100&bscr=217.51297&scr=217.51297&iid=1635382255324101446",
+        "skills_detectadas": [
+            "Azure"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 56,
+        "titulo": "Desarrollador Java SSR | Híbrido| Quito",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/5316673582858634455?ckey=programador&rgn=1389&pos=246&elckey=8380038133676993176&pageType=8&p=13&sid=-5490044999960247079&jobAge=1289&relb=100&brelb=100&bscr=217.51297&scr=217.51297&iid=-6018928724735126765",
+        "skills_detectadas": [
+            "Java",
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 57,
+        "titulo": "Desarrollador CA Plex | Guayaquil",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-8497578823853331924?ckey=programador&rgn=1389&pos=250&elckey=8380038133676993176&pageType=8&p=13&sid=-5490044999960247079&jobAge=1193&relb=100&brelb=100&bscr=216.28462&scr=216.28462&iid=1942255162039404398",
+        "skills_detectadas": [
+            "Java",
+            "Go",
+            "Angular",
+            "SQL",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 58,
+        "titulo": "Semi-Senior/Senior Desarrollador Java (Spring) - Sector Financiero/Bancario",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/7278361163105109796?ckey=programador&rgn=1389&pos=256&elckey=8380038133676993176&pageType=8&p=13&sid=-5490044999960247079&jobAge=86&relb=100&brelb=100&bscr=210.05087&scr=210.05087&iid=3202476238104982230",
+        "skills_detectadas": [
+            "Java",
+            "Angular",
+            "Spring",
+            "SQL"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 59,
+        "titulo": "Desarrollador Full stack Especialista de Soporte",
+        "salario_detectado": "800 USD",
+        "link": "https://ec.jooble.org/desc/-2160085509421301871?ckey=programador&rgn=1389&pos=257&elckey=8380038133676993176&pageType=8&p=13&sid=-5490044999960247079&jobAge=1049&relb=100&brelb=100&bscr=209.65555&scr=209.65555&iid=1326411729467692293",
+        "skills_detectadas": [
+            "Go",
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 60,
+        "titulo": "Desarrolladora Frontend Senior (React +TypeScript)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/6134275800823011042?ckey=programador&rgn=1389&pos=258&elckey=8380038133676993176&pageType=8&p=13&sid=-5490044999960247079&jobAge=1625&relb=100&brelb=100&bscr=209.33038&scr=209.33038&iid=-8896868219995475204",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 61,
+        "titulo": "Desarrollador IA Senior (Ecosistema LangChain)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-951361412552545693?ckey=programador&rgn=1389&pos=259&elckey=8380038133676993176&pageType=8&p=13&sid=-5490044999960247079&jobAge=1433&relb=100&brelb=100&bscr=209.33038&scr=209.33038&iid=8706300047856636463",
+        "skills_detectadas": [
+            "Java",
+            "Go",
+            "Angular",
+            "SQL",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 62,
+        "titulo": "Desarrollador JAVA SR, Remoto LATAM",
+        "salario_detectado": "$450",
+        "link": "https://ec.jooble.org/desc/-2394077611791730003?ckey=programador&rgn=1389&pos=260&elckey=8380038133676993176&pageType=8&p=13&sid=-5490044999960247079&jobAge=1961&relb=100&brelb=100&bscr=208.39285&scr=208.39285&iid=7293466339566813089",
+        "skills_detectadas": [
+            "Java",
+            "Go",
+            "Angular",
+            "SQL",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 63,
+        "titulo": "Experto en Dynatrace, Automatización y Chaos Engineering",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/6127564826927216353?ckey=programador&rgn=1389&pos=261&elckey=8380038133676993176&pageType=8&p=14&sid=-5490044999960247079&jobAge=1241&relb=100&brelb=100&bscr=208.39285&scr=208.39285&iid=-563997344846653419",
+        "skills_detectadas": [
+            "Azure",
+            "Excel",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 64,
+        "titulo": "Asistente en Desarrollo de Software",
+        "salario_detectado": "$500",
+        "link": "https://ec.jooble.org/away/-1708045023284960868?p=14&pos=263&rgn=1389&pageType=8&ckey=programador&sid=-5490044999960247079&jobAge=433&relb=75&brelb=15&scr=207.79685&bscr=41.55937&elckey=8380038133676993176&iid=-5776283769956202466",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 65,
+        "titulo": "Account Manager Hunter IT- Guayaquil",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-564133007111330374?ckey=programador&rgn=1389&pos=264&elckey=8380038133676993176&pageType=8&p=14&sid=-5490044999960247079&jobAge=2640&relb=100&brelb=100&bscr=207.1345&scr=207.1345&iid=6840647601336453412"
+    },
+    {
+        "id": 66,
+        "titulo": "Data Engineer (Relocation to Spain)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-7914853012197995857?ckey=programador&rgn=1389&pos=266&elckey=8380038133676993176&pageType=8&p=14&sid=-5490044999960247079&jobAge=1265&relb=100&brelb=100&bscr=207.1345&scr=207.1345&iid=8004574804766985275",
+        "skills_detectadas": [
+            "Azure",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 67,
+        "titulo": "Ingeniero de Software Senior Remoto URUGUAY",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-649839356747497599?ckey=programador&rgn=1389&pos=267&elckey=8380038133676993176&pageType=8&p=14&sid=-5490044999960247079&jobAge=2640&relb=100&brelb=100&bscr=206.8991&scr=206.8991&iid=3518388718704177205",
+        "skills_detectadas": [
+            "Angular",
+            "Azure",
+            "Excel",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 68,
+        "titulo": "Arquitecto de Datos Senior Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-279944765719357838?ckey=programador&rgn=1389&pos=268&elckey=8380038133676993176&pageType=8&p=14&sid=-5490044999960247079&jobAge=1961&relb=100&brelb=100&bscr=206.8991&scr=206.8991&iid=4524618314024169804",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 69,
+        "titulo": "Desarrollador Frontend (Angular | React) Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-1567303780272977002?ckey=programador&rgn=1389&pos=269&elckey=8380038133676993176&pageType=8&p=14&sid=-5490044999960247079&jobAge=1289&relb=100&brelb=100&bscr=206.8991&scr=206.8991&iid=-4245853525287754464",
+        "skills_detectadas": [
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 70,
+        "titulo": "Desarrollador FullStack Senior (Java- Angular) Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-4510258252135218257?ckey=programador&rgn=1389&pos=273&elckey=8380038133676993176&pageType=8&p=14&sid=-5490044999960247079&jobAge=1241&relb=100&brelb=100&bscr=203.91841&scr=203.91841&iid=695363417151811899",
+        "skills_detectadas": [
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 71,
+        "titulo": "Desarrollador SSR NestJS Remoto Latam",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-6624923430087191811?ckey=programador&rgn=1389&pos=274&elckey=8380038133676993176&pageType=8&p=14&sid=-5490044999960247079&jobAge=1889&relb=100&brelb=100&bscr=203.562&scr=203.562&iid=-5674615456948359247",
+        "skills_detectadas": [
+            "Go",
+            "Angular"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 72,
+        "titulo": "Remote Senior Project Manager - Software Implementation",
+        "salario_detectado": "$450",
+        "link": "https://ec.jooble.org/desc/-1358683367565475831?ckey=programador&rgn=1389&pos=278&elckey=8380038133676993176&pageType=8&p=14&sid=-5490044999960247079&jobAge=2078&relb=100&brelb=100&bscr=196.24724&scr=196.24724000000003&iid=-5083242699878524851",
+        "skills_detectadas": [
+            "Angular",
+            "Azure",
+            "Excel",
+            "Power BI",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 73,
+        "titulo": "Training Leagues AI Native | Full Cycle Engineer | ECU",
+        "salario_detectado": "$450",
+        "link": "https://ec.jooble.org/desc/-7501894944980696417?ckey=programador&rgn=1389&pos=279&elckey=8380038133676993176&pageType=8&p=14&sid=-5490044999960247079&jobAge=600&relb=100&brelb=100&bscr=194.86076&scr=194.86076&iid=-1300233156341022869",
+        "skills_detectadas": [
+            "Azure",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 74,
+        "titulo": "Desarrollador Java Semi Senior | Híbrido | Quito",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/5513189682564267302?ckey=programador&rgn=1389&pos=282&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=1289&relb=100&brelb=100&bscr=194.82343&scr=194.82343&iid=4844998064492814704",
+        "skills_detectadas": [
+            "Java"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 75,
+        "titulo": "Technical Author - AI for QA (part-time)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/9220164229337951772?ckey=programador&rgn=1389&pos=283&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=1121&relb=100&brelb=100&bscr=194.82343&scr=194.82343&iid=5936023414765180574",
+        "skills_detectadas": [
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 76,
+        "titulo": "Senior Cobol Developer - Sector Financiero/Bancario",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-1635714915887204650?ckey=programador&rgn=1389&pos=284&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=6233&relb=100&brelb=100&bscr=194.82343&scr=194.82343&iid=7721341710190536544",
+        "skills_detectadas": [
+            "Angular",
+            "Azure"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 77,
+        "titulo": "Senior Ingeniero de datos - Sector Financiero/Bancario",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/5899933308302369008?ckey=programador&rgn=1389&pos=286&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=1398&relb=100&brelb=100&bscr=194.1886&scr=194.1886&iid=-3068726199145311950",
+        "skills_detectadas": [
+            "Angular",
+            "Excel"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 78,
+        "titulo": "Desarrollador Front-end (Angular + React Native)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/1942503427074915533?ckey=programador&rgn=1389&pos=287&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=1577&relb=100&brelb=100&bscr=193.9679&scr=193.9679&iid=2694079798035961665",
+        "skills_detectadas": [
+            "React",
+            "SQL",
+            "Oracle",
+            "Git",
+            "Linux"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 79,
+        "titulo": "IA Expert Especialista en Arquitecturas Cognitivas (Senior)",
+        "salario_detectado": "800 USD",
+        "link": "https://ec.jooble.org/desc/-4525282758205157780?ckey=programador&rgn=1389&pos=289&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=1625&relb=100&brelb=100&bscr=193.3411&scr=193.3411&iid=6549180484173098670",
+        "skills_detectadas": [
+            "Angular",
+            "Azure",
+            "Excel",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 80,
+        "titulo": "QA Semisenior | Híbrido en Uruguay, Colombia y Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-8826855753239155234?ckey=programador&rgn=1389&pos=290&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=2637&relb=100&brelb=100&bscr=193.3411&scr=193.3411&iid=4898123442647725048",
+        "skills_detectadas": [],
+        "revisado": true
+    },
+    {
+        "id": 81,
+        "titulo": "Líder Técnico de Automatización (QA) Quito Ecuador",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-6013622545948729028?ckey=programador&rgn=1389&pos=292&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=1697&relb=100&brelb=100&bscr=190.83937&scr=190.83937000000003&iid=3308074682949856062",
+        "skills_detectadas": [
+            "Azure",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 82,
+        "titulo": "Senior Data Engineer (Relocation to Spain)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-1488168710405165158?ckey=programador&rgn=1389&pos=293&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=1433&relb=100&brelb=100&bscr=190.83937&scr=190.83937000000003&iid=7252403178395798916",
+        "skills_detectadas": [
+            "Angular",
+            "Azure",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 83,
+        "titulo": "Senior Data Engineer (SparkScala) Relocation to Spain",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-1889985439952140779?ckey=programador&rgn=1389&pos=296&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=1289&relb=100&brelb=100&bscr=181.24269&scr=181.24269&iid=4801114050090582713",
+        "skills_detectadas": [
+            "Angular",
+            "Azure",
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 84,
+        "titulo": "Part time Instructor Business Transformation & AI Adoption",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/444639012349976685?ckey=programador&rgn=1389&pos=297&elckey=8380038133676993176&pageType=8&p=15&sid=-5490044999960247079&jobAge=1601&relb=100&brelb=100&bscr=180.45169&scr=180.45169&iid=3427911861932412513",
+        "skills_detectadas": [
+            "Go",
+            "Azure",
+            "AI",
+            "Inglés"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 85,
+        "titulo": "Desarrolladores .NET Backend Focus Front End Modern UIUX Remotos",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-7353619196616379007?ckey=programador&rgn=1389&pos=301&elckey=8380038133676993176&pageType=8&p=16&sid=-5490044999960247079&jobAge=1097&relb=110&brelb=110&bscr=170.69176&scr=170.69176&iid=1803239651937886773",
+        "skills_detectadas": [
+            "Python",
+            "Java",
+            "TypeScript",
+            "C#",
+            ".NET",
+            "React",
+            "Spring",
+            "Azure"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 86,
+        "titulo": "Semi-Senior/Senior Desarrollador Java (Spring) - Sector Financiero/Bancario",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-356622853977053298?ckey=programador&rgn=1389&pos=308&elckey=8380038133676993176&pageType=8&p=16&sid=-5490044999960247079&jobAge=6233&relb=100&brelb=100&bscr=168.84695&scr=168.84695&iid=-2396792851608487448",
+        "skills_detectadas": [
+            "Java",
+            "Angular",
+            "Spring",
+            "SQL"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 87,
+        "titulo": "Part-time Instructor AI Tools for Non-Technical Professionals",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/5618730029245624246?ckey=programador&rgn=1389&pos=309&elckey=8380038133676993176&pageType=8&p=16&sid=-5490044999960247079&jobAge=1721&relb=100&brelb=100&bscr=167.56229&scr=167.56229&iid=-805391350300654912",
+        "skills_detectadas": [
+            "AI"
+        ],
+        "revisado": true
+    },
+    {
+        "id": 88,
+        "titulo": "Non-Tech Instructors - AI, Business & Professional Development (Part-time)",
+        "salario_detectado": "No especificado",
+        "link": "https://ec.jooble.org/desc/-123419654245092911?ckey=programador&rgn=1389&pos=313&elckey=8380038133676993176&pageType=8&p=16&sid=-5490044999960247079&jobAge=1721&relb=100&brelb=100&bscr=163.13474&scr=163.13474&iid=-2269451663544949179",
+        "skills_detectadas": [
+            "Azure",
+            "AI",
+            "Inglés"
+        ],
+        "revisado": true
+    }
+]
