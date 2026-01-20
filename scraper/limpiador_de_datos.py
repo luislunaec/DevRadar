@@ -1,114 +1,216 @@
 import json
-import unicodedata
+import pandas as pd
 import re
+import os
+from datetime import datetime
 
-# --- NIVEL 1: PALABRAS VIP (Entran directo) ---
-TECH_VIP = [
-    "programador", "desarrollador", "developer", "backend", "frontend", "fullstack", 
-    "devops", "java", "python", "php", "sql", "net", "react", "angular", "node", 
-    "aws", "azure", "linux", "scrum", "agile", "ciberseguridad", "cyber", "robotica", 
-    "machine learning", "ia", "ai", "tester", "qa", "data scientist", "data engineer"
-]
+# --- 🧠 EL CEREBRO: DICCIONARIO DE TECNOLOGÍAS ---
+# Este es el mapa que usamos para buscar en el texto crudo.
+MAPA_TECNOLOGIAS = {
+    # Lenguajes
+    r'\bpython\b': 'PYTHON',
+    r'\bjava\b': 'JAVA',
+    r'\bjavascript\b': 'JAVASCRIPT',
+    r'\btypescript\b': 'TYPESCRIPT',
+    r'\bc#\b': 'C#',
+    r'\b\.net\b': '.NET',
+    r'\bphp\b': 'PHP',
+    r'\bc\+\+\b': 'C++',
+    r'\br\b': 'R',
+    r'\bgolang\b': 'GO',
+    r'\bkotlin\b': 'KOTLIN',
+    r'\bbash\b': 'BASH/SHELL',
 
-# --- NIVEL 2: ROLES GENÉRICOS ---
-ROLES_GENERICOS = [
-    "analista", "ingeniero", "tecnico", "técnico", "consultor", "arquitecto", 
-    "coordinador", "jefe", "gerente", "lider", "especialista", "administrador",
-    "pasante", "practicante", "trainee", "asistente", "soporte", "help desk", "docente", "tutor"
-]
+    # Backend & Frameworks
+    r'\bdjango\b': 'DJANGO',
+    r'\bflask\b': 'FLASK',
+    r'\bfastapi\b': 'FASTAPI',
+    r'\bspring\b': 'SPRING BOOT',
+    r'\blaravel\b': 'LARAVEL',
+    r'\bnode\.?js\b': 'NODE.JS',
+    r'\bexpress\b': 'EXPRESS.JS',
 
-# --- APELLIDOS OBLIGATORIOS (Si es genérico, DEBE tener uno de estos) ---
-APELLIDOS_TECH = [
-    "sistemas", "software", "informatica", "informática", "computacion", "computación",
-    "tecnologia", "technology", "ti", "it", "datos", "data", "redes", "networking",
-    "web", "aplicaciones", "app", "cloud", "nube", "digital", "automatizacion", 
-    "programming", "engineering"
-]
+    # Frontend
+    r'\breact\b': 'REACT',
+    r'\bangular\b': 'ANGULAR',
+    r'\bvue\b': 'VUE.JS',
+    r'\bhtml\b': 'HTML',
+    r'\bcss\b': 'CSS',
+    r'\btailwind\b': 'TAILWIND',
+    r'\bbootstrap\b': 'BOOTSTRAP',
 
-# --- NIVEL 3: BASURA (Si tiene esto, SE VA) ---
-BASURA = [
-    "chofer", "conductor", "vendedor", "cajero", "limpieza", "guardia", "recepcionista",
-    "call center", "bodega", "almacen", "odontolog", "abogado", "contador", "financier", 
-    "credito", "cobranza", "recursos humanos", "rrhh", "marketing", "comercial", "ventas", 
-    "automotriz", "mecanico", "electrico", "civil", "obra", "hotel", "turismo", "restaurante",
-    "enfermer", "medico", "cocin", "panader", "secretaria", "administrativo", "administrativa", 
-    "contable", "atencion al cliente", "cliente", "talento humano"
-]
+    # Datos
+    r'\bsql\b': 'SQL',
+    r'\bmysql\b': 'MYSQL',
+    r'\bpostgres': 'POSTGRESQL',
+    r'\bsql server\b': 'SQL SERVER',
+    r'\bmongo': 'MONGODB',
+    r'\bpandas\b': 'PANDAS',
+    r'\bnumpy\b': 'NUMPY',
+    r'\bpower bi\b': 'POWER BI',
+    r'\btableau\b': 'TABLEAU',
+    r'\bexcel\b': 'EXCEL',
 
-def normalizar(texto):
-    if not texto: return ""
-    return ''.join(c for c in unicodedata.normalize('NFD', texto.lower()) if unicodedata.category(c) != 'Mn')
+    # Cloud & Infra
+    r'\baws\b': 'AWS',
+    r'\bamazon web services\b': 'AWS',
+    r'\bazure\b': 'AZURE',
+    r'\bgcp\b': 'GOOGLE CLOUD',
+    r'\bgoogle cloud\b': 'GOOGLE CLOUD',
+    r'\bdocker\b': 'DOCKER',
+    r'\bkubernetes\b': 'KUBERNETES',
+    r'\bjenkins\b': 'JENKINS',
+    r'\bgit\b': 'GIT',
+    r'\blinux\b': 'LINUX',
+    r'\bubuntu\b': 'UBUNTU',
+    r'\bzoho\b': 'ZOHO CRM'
 
-def tiene_palabra_completa(lista_palabras, texto):
-    """ Busca palabra exacta usando Regex (Ej: evita que 'ti' coincida con 'tiempo') """
-    for palabra in lista_palabras:
-        # \b significa límite de palabra
-        if re.search(r'\b' + re.escape(palabra) + r'\b', texto):
-            return True, palabra
-    return False, None
+    # Ciberseguridad & Redes
+    r'\bkali\b': 'KALI LINUX',
+    r'\bwireshark\b': 'WIRESHARK',
+    r'\bcisco\b': 'CISCO',
+    r'\bccna\b': 'CCNA',
+    r'\bfirewall\b': 'FIREWALL',
+    r'\bowasp\b': 'OWASP',
+    r'\biso 27001\b': 'ISO 27001'
+}
 
-def ejecutar_filtro_corregido():
-    print("🧠 EJECUTANDO FILTRO CONTEXTUAL V2 (Estricto)...")
+def extraer_skills(texto):
+    """Busca palabras clave dentro del texto sucio usando Regex."""
+    if not isinstance(texto, str): return []
+    texto_lower = texto.lower()
+    skills = set()
+    for patron, tech in MAPA_TECNOLOGIAS.items():
+        if re.search(patron, texto_lower):
+            skills.add(tech)
+    return list(skills)
+
+def limpiar_datos_universal():
+    print("🧹 INICIANDO PROTOCOLO DE LIMPIEZA PROFUNDA...")
     
-    try:
-        with open("base_datos_masiva.json", "r", encoding="utf-8") as f:
-            todas = json.load(f)
-    except:
-        print("❌ Error: No existe 'base_datos_masiva.json'")
-        return
+    data_final = []
+    ids_vistos = set()
+    total_basura = 0
 
-    validas = []
-    eliminadas = 0
-
-    print(f"📊 Analizando {len(todas)} ofertas...\n")
-
-    for oferta in todas:
-        titulo = normalizar(oferta.get("titulo", ""))
-        titulo_orig = oferta.get("titulo", "")
-        
-        # 1. FILTRO DE BASURA (Prioridad Máxima)
-        es_basura, palabra_basura = tiene_palabra_completa(BASURA, titulo)
-        if es_basura:
-            eliminadas += 1
-            # print(f"🗑️ Basura detectada ({palabra_basura}): {titulo_orig}")
-            continue
-
-        razon_aprobacion = ""
-
-        # 2. CHEQUEO VIP (Nivel 1)
-        es_vip, palabra_vip = tiene_palabra_completa(TECH_VIP, titulo)
-        if es_vip:
-            razon_aprobacion = f"VIP ({palabra_vip})"
-        
-        # 3. CHEQUEO CONTEXTUAL (Nivel 2)
-        if not razon_aprobacion:
-            es_rol_gen, _ = tiene_palabra_completa(ROLES_GENERICOS, titulo)
-            es_apellido_tech, apellido = tiene_palabra_completa(APELLIDOS_TECH, titulo)
+    # ---------------------------------------------------------
+    # 1. PROCESAR JOOBLE (JSON con 'raw_text')
+    # ---------------------------------------------------------
+    archivo_jooble = "data_cruda_jooble.json"
+    if os.path.exists(archivo_jooble):
+        try:
+            with open(archivo_jooble, "r", encoding="utf-8") as f:
+                datos_jooble = json.load(f)
+            print(f"📥 Jooble: Analizando {len(datos_jooble)} registros crudos...")
             
-            if es_rol_gen and es_apellido_tech:
-                razon_aprobacion = f"Rol + Tech ({apellido})"
-            elif es_apellido_tech:
-                # Caso: "Jefe de Sistemas" o simplemente "Sistemas"
-                razon_aprobacion = f"Tech Fuerte ({apellido})"
+            for item in datos_jooble:
+                link = item.get("link", "")
+                
+                # Evitar duplicados
+                if link in ids_vistos: continue
+                
+                # Datos Crudos
+                titulo = item.get("titulo", "Sin Título")
+                raw_text = item.get("raw_text", "") # Aquí está TODO el texto
+                
+                # --- A. EXTRACCIÓN DE SKILLS ---
+                # Buscamos skills en TODO el texto (título + descripción)
+                skills_detectadas = extraer_skills(raw_text)
+                
+                # --- B. FILTRO DE CALIDAD ---
+                # Si no encontramos skills, verificamos si el título al menos suena tech
+                palabras_clave_titulo = ["desarrollador", "programador", "sistemas", "analista", "datos", "data", "software", "web", "tech", "informatica", "redes", "seguridad"]
+                es_titulo_tech = any(p in titulo.lower() for p in palabras_clave_titulo)
+                
+                # Si NO tiene skills Y NO parece título de sistemas -> BASURA
+                if not skills_detectadas and not es_titulo_tech:
+                    total_basura += 1
+                    continue 
 
-        # DECISIÓN FINAL
-        if razon_aprobacion:
-            validas.append(oferta)
-        else:
-            eliminadas += 1
+                # --- C. EXTRACCIÓN DE SALARIO ---
+                # Buscamos líneas que tengan "$" en el texto crudo
+                salario = "No especificado"
+                if "$" in raw_text:
+                    for linea in raw_text.split('\n'):
+                        if "$" in linea and len(linea) < 40: # Evitamos frases largas
+                            salario = linea.strip()
+                            break
+                
+                # --- D. EXTRACCIÓN DE UBICACIÓN ---
+                ubicacion = "Quito" # Default
+                if "Remoto" in raw_text: ubicacion = "Remoto"
+                elif "Híbrido" in raw_text: ubicacion = "Híbrido"
 
-    # RE-INDEXAR
-    for i, oferta in enumerate(validas):
-        oferta["id"] = i + 1
+                # Guardamos registro limpio
+                registro = {
+                    "fuente": "Jooble",
+                    "fecha": item.get("fecha_recoleccion", datetime.now().strftime("%Y-%m-%d")),
+                    "titulo": titulo,
+                    "empresa": "Confidencial/Ver Link",
+                    "ubicacion": ubicacion,
+                    "salario": salario,
+                    "skills": sorted(skills_detectadas), # Ordenaditas A-Z
+                    "link": link
+                }
+                data_final.append(registro)
+                ids_vistos.add(link)
+                
+        except Exception as e:
+            print(f"⚠️ Error leyendo Jooble: {e}")
 
-    print("-" * 30)
-    print(f"✅ Ofertas Aprobadas: {len(validas)}")
-    print(f"🗑️ Ofertas Eliminadas: {eliminadas}")
-    print("-" * 30)
+    # ---------------------------------------------------------
+    # 2. PROCESAR COMPUTRABAJO (CSV de tu amigo) - Opcional
+    # ---------------------------------------------------------
+    archivo_csv = "ofertas_crudas.csv"
+    if os.path.exists(archivo_csv):
+        try:
+            df_compu = pd.read_csv(archivo_csv)
+            print(f"📥 Computrabajo: Integrando {len(df_compu)} registros...")
+            
+            for _, row in df_compu.iterrows():
+                link = row.get("url_publicacion", "")
+                if link in ids_vistos: continue
+                
+                titulo_limpio = str(row.get("oferta_laboral", "")).replace("PostuladoVista", "").strip()
+                
+                # Aquí solo podemos buscar skills en el título (porque no hay descripción)
+                skills_detectadas = extraer_skills(titulo_limpio)
+                
+                registro = {
+                    "fuente": "Computrabajo",
+                    "fecha": datetime.now().strftime("%Y-%m-%d"),
+                    "titulo": titulo_limpio,
+                    "empresa": str(row.get("compania", "Confidencial")),
+                    "ubicacion": "Quito",
+                    "salario": str(row.get("sueldo", "No especificado")),
+                    "skills": sorted(skills_detectadas),
+                    "link": link
+                }
+                data_final.append(registro)
+                ids_vistos.add(link)
+        except: pass
+
+    # ---------------------------------------------------------
+    # 3. GUARDADO FINAL
+    # ---------------------------------------------------------
+    print("-" * 40)
+    print(f"📊 RESULTADOS:")
+    print(f"   ✅ Ofertas Válidas: {len(data_final)}")
+    print(f"   🗑️ Basura Eliminada: {total_basura}")
     
-    with open("base_datos_filtrada.json", "w", encoding="utf-8") as f:
-        json.dump(validas, f, indent=4, ensure_ascii=False)
-    print("💾 Guardado en: 'base_datos_filtrada.json'")
+    if data_final:
+        # Guardar JSON Maestro
+        with open("base_datos_maestra.json", "w", encoding="utf-8") as f:
+            json.dump(data_final, f, indent=4, ensure_ascii=False)
+            
+        # Guardar Excel
+        df = pd.DataFrame(data_final)
+        # Convertir lista de skills a texto bonito "Python, SQL"
+        df['skills'] = df['skills'].apply(lambda x: ", ".join(x))
+        
+        df.to_excel("REPORTE_OFICIAL_FINAL.xlsx", index=False)
+        print(f"💾 Archivo generado: 'REPORTE_OFICIAL_FINAL.xlsx'")
+    else:
+        print("⚠️ No hay datos para guardar.")
 
 if __name__ == "__main__":
-    ejecutar_filtro_corregido()
+    limpiar_datos_universal()
