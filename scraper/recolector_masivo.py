@@ -4,127 +4,122 @@ from selenium.webdriver.common.keys import Keys
 import json
 import time
 import random
+import os 
 
-def recolector_scroll_infinito():
-    print("📜 Iniciando RECOLECCIÓN POR SCROLL INFINITO...")
-    print("🎯 Meta: Bajar y bajar hasta tener muchas ofertas.")
+# --- CONFIGURACIÓN ---
+PERFILES_A_BUSCAR = [
+    "programador", "desarrollador backend", "desarrollador frontend", 
+    "especialista ciberseguridad", "ingeniero de datos", 
+    "administrador de redes", "devops", "qa tester"
+]
+
+def recolector_fuerza_bruta():
+    print("INICIANDO RECOLECTOR MASIVO DE DATOS")
     
+    nombre_archivo = "data_cruda_jooble.json"
+    lista_ofertas_acumulada = []
+    links_vistos = set()
+    
+    # 1. Cargar memoria previa
+    if os.path.exists(nombre_archivo):
+        try:
+            with open(nombre_archivo, "r", encoding="utf-8") as f:
+                lista_ofertas_acumulada = json.load(f)
+            for o in lista_ofertas_acumulada: links_vistos.add(o.get("link"))
+            print(f"📚 Memoria cargada: {len(links_vistos)} ofertas previas.")
+        except: pass
+
+    # 2. Navegador (CONFIGURACIÓN BLINDADA) 🛡️
     options = uc.ChromeOptions()
     options.add_argument("--start-maximized")
-    driver = uc.Chrome(options=options)
-    
-    # Usamos un conjunto (set) para evitar guardar la misma oferta dos veces
-    links_vistos = set()
-    lista_final_ofertas = []
+    options.add_argument("--disable-popup-blocking") # Bloquear popups molestos
+    options.add_argument("--no-sandbox") # Evita crasheos en ciertos sistemas
+    options.add_argument("--disable-dev-shm-usage") # Usa mejor la memoria
     
     try:
-        # 1. Entrar a la página PRINCIPAL (Sin números de página)
-        url = "https://ec.jooble.org/SearchResult?ukw=programador&rgns=Quito"
-        driver.get(url)
-        
-        print("⏳ Esperando 10 segundos para que cargue la primera tanda...")
-        time.sleep(10)
-        
-        # --- BUCLE DE SCROLL ---
-        # Haremos esto hasta tener 1000 ofertas o hasta que no haya más
-        intentos_sin_nuevos = 0
-        
-        while len(lista_final_ofertas) < 1000:
-            # 1. Guardamos la altura actual de la página
-            altura_antes = driver.execute_script("return document.body.scrollHeight")
-            
-            # 2. BAJAMOS HASTA EL FONDO (Scroll)
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            
-            # También presionamos la tecla END por si acaso el JS no activa la carga
-            try:
-                driver.find_element(By.TAG_NAME, "body").send_keys(Keys.END)
-            except: pass
-            
-            print(f"⬇️ Bajando... (Esperando carga de nuevas ofertas)")
-            time.sleep(random.uniform(4, 6)) # Esperamos a que aparezcan las nuevas
-            
-            # 3. EXTRAEMOS LO QUE VEMOS EN PANTALLA
-            # Usamos el selector CORREGIDO que tú me diste: _jobCard
-            tarjetas = driver.find_elements(By.CSS_SELECTOR, "div[data-test-name='_jobCard']")
-            
-            nuevos_en_esta_bajada = 0
-            
-            for tarjeta in tarjetas:
-                try:
-                    # Sacamos el Link (es lo más importante para filtrar repetidos)
-                    try:
-                        elemento_link = tarjeta.find_element(By.TAG_NAME, "a")
-                        link = elemento_link.get_attribute("href")
-                    except: 
-                        continue # Si no tiene link, no nos sirve
-
-                    # Si es un link nuevo, guardamos todo
-                    if link and link not in links_vistos:
-                        links_vistos.add(link)
-                        
-                        # Sacamos Título
-                        try:
-                            titulo = tarjeta.find_element(By.TAG_NAME, "h2").text
-                        except: titulo = "Sin Título"
-                        
-                        # Sacamos Salario (Buscamos texto con $)
-                        salario = "No especificado"
-                        try:
-                            texto_tarjeta = tarjeta.text
-                            for linea in texto_tarjeta.split('\n'):
-                                if "$" in linea or "mensual" in linea.lower():
-                                    salario = linea
-                                    break
-                        except: pass
-
-                        # Agregamos a la lista oficial
-                        lista_final_ofertas.append({
-                            "id": len(lista_final_ofertas) + 1,
-                            "titulo": titulo,
-                            "salario_detectado": salario,
-                            "link": link
-                        })
-                        nuevos_en_esta_bajada += 1
-                except:
-                    pass
-
-            print(f"   ✨ Encontré {nuevos_en_esta_bajada} ofertas NUEVAS en esta bajada.")
-            print(f"   📦 TOTAL ACUMULADO: {len(lista_final_ofertas)} ofertas.")
-            
-            # 4. VERIFICACIÓN DE FIN
-            if nuevos_en_esta_bajada == 0:
-                intentos_sin_nuevos += 1
-                print(f"   ⚠️ No salieron nuevas... Intentando bajar más fuerte ({intentos_sin_nuevos}/5)")
-                
-                # A veces sale un botón de "Mostrar más", intentamos clickearlo
-                try:
-                    botones = driver.find_elements(By.TAG_NAME, "button")
-                    for btn in botones:
-                        if "más" in btn.text.lower() or "more" in btn.text.lower():
-                            btn.click()
-                            print("   👆 Click en botón 'Mostrar más'")
-                            time.sleep(3)
-                            break
-                except: pass
-                
-                if intentos_sin_nuevos >= 5:
-                    print("🛑 Parece que llegamos al final de la lista. No hay más trabajos.")
-                    break
-            else:
-                intentos_sin_nuevos = 0 # Reiniciamos contador porque sí encontramos
-
-            # 5. GUARDADO DE SEGURIDAD (Cada vez que encontramos algo)
-            with open("base_datos_masiva.json", "w", encoding="utf-8") as f:
-                json.dump(lista_final_ofertas, f, indent=4, ensure_ascii=False)
-
+        driver = uc.Chrome(options=options, version_main=143)
     except Exception as e:
-        print(f"❌ Error: {e}")
-        
-    finally:
-        print("🏁 Cerrando navegador.")
-        print(f"💾 Archivo final guardado: 'base_datos_masiva.json' con {len(lista_final_ofertas)} datos.")
-        driver.quit()
+        print(f"⚠️ Error al abrir Chrome: {e}")
+        print("💡 INTENTO 2: Abriendo sin forzar versión...")
+        driver = uc.Chrome(options=options)
+    
+    try:
+        for perfil in PERFILES_A_BUSCAR:
+            print(f"\n🔎 --- BUSCANDO: {perfil.upper()} ---")
+            driver.get(f"https://ec.jooble.org/SearchResult?ukw={perfil.replace(' ', '%20')}&rgns=Quito")
+            
+            
+            time.sleep(8)
+            
+            ofertas_perfil = 0
+            sin_novedad = 0
+            
+            # SCROLL INFINITO HASTA 200
+            while ofertas_perfil < 200:
+                # Scroll suave
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(2) # Pausa para que respire
+                
+                try: driver.find_element(By.TAG_NAME, "body").send_keys(Keys.END)
+                except: pass
+                time.sleep(random.uniform(2, 4))
+                
+                # Buscamos tarjetas
+                tarjetas = driver.find_elements(By.CSS_SELECTOR, "div[data-test-name='_jobCard']")
+                if not tarjetas: tarjetas = driver.find_elements(By.TAG_NAME, "article")
+                
+                nuevos = 0
+                for tarjeta in tarjetas:
+                    try:
+                        # Sacamos el link
+                        try:
+                            link = tarjeta.find_element(By.TAG_NAME, "a").get_attribute("href")
+                        except: continue
+                        
+                        if link and link not in links_vistos:
+                            links_vistos.add(link)
+                            
+                            # ESTRATEGIA: GUARDAR TODO LO QUE SE VE
+                            texto_crudo = tarjeta.text 
+                            
+                            try: titulo = tarjeta.find_element(By.TAG_NAME, "h2").text
+                            except: titulo = "Sin Título"
+
+                            lista_ofertas_acumulada.append({
+                                "link": link,
+                                "titulo": titulo,
+                                "raw_text": texto_crudo, 
+                                "fecha_recoleccion": time.strftime("%Y-%m-%d")
+                            })
+                            
+                            nuevos += 1
+                            ofertas_perfil += 1
+                    except: pass
+                
+                print(f"   ⬇️ Bajando... (Total BD: {len(lista_ofertas_acumulada)})")
+                
+                if nuevos == 0:
+                    sin_novedad += 1
+                    if sin_novedad >= 3:
+                        try:
+                            botones = driver.find_elements(By.TAG_NAME, "button")
+                            for b in botones: 
+                                if "más" in b.text.lower(): b.click(); time.sleep(2); break
+                        except: pass
+                    if sin_novedad >= 5: break
+                else:
+                    sin_novedad = 0
+            
+            # Guardado rápido
+            with open(nombre_archivo, "w", encoding="utf-8") as f:
+                json.dump(lista_ofertas_acumulada, f, indent=4, ensure_ascii=False)
+
+    except Exception as e: 
+        print(f"❌ Error CRÍTICO durante la ejecución: {e}")
+    finally: 
+        try: driver.quit()
+        except: pass
+        print("🏁 Fin.")
 
 if __name__ == "__main__":
-    recolector_scroll_infinito()
+    recolector_fuerza_bruta()
