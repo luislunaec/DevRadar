@@ -13,8 +13,26 @@ PERFILES_A_BUSCAR = [
     "administrador de redes", "devops", "qa tester"
 ]
 
+def extraer_salario_simple(texto_tarjeta):
+    """
+    Busca una línea que tenga dinero ($ o USD) dentro del texto de la tarjeta.
+    """
+    if not texto_tarjeta: return "No especificado"
+    
+    # Dividimos el texto en líneas y revisamos una por una
+    lineas = texto_tarjeta.split('\n')
+    for linea in lineas:
+        # Limpiamos espacios
+        l = linea.strip()
+        # Si tiene signo de dólar O dice USD, Y ADEMÁS tiene algún número...
+        if ("$" in l or "USD" in l) and any(char.isdigit() for char in l):
+            # Filtro extra: Que la línea no sea un párrafo gigante (menos de 50 letras)
+            if len(l) < 50:
+                return l
+    return "No especificado"
+
 def recolector_fuerza_bruta():
-    print("INICIANDO RECOLECTOR MASIVO DE DATOS")
+    print("INICIANDO RECOLECTOR MASIVO DE DATOS (CON DETECTOR DE SALARIOS)")
     
     nombre_archivo = "data_cruda_jooble.json"
     lista_ofertas_acumulada = []
@@ -32,9 +50,9 @@ def recolector_fuerza_bruta():
     # 2. Navegador (CONFIGURACIÓN BLINDADA) 🛡️
     options = uc.ChromeOptions()
     options.add_argument("--start-maximized")
-    options.add_argument("--disable-popup-blocking") # Bloquear popups molestos
-    options.add_argument("--no-sandbox") # Evita crasheos en ciertos sistemas
-    options.add_argument("--disable-dev-shm-usage") # Usa mejor la memoria
+    options.add_argument("--disable-popup-blocking") 
+    options.add_argument("--no-sandbox") 
+    options.add_argument("--disable-dev-shm-usage") 
     
     try:
         driver = uc.Chrome(options=options, version_main=143)
@@ -48,7 +66,6 @@ def recolector_fuerza_bruta():
             print(f"\n🔎 --- BUSCANDO: {perfil.upper()} ---")
             driver.get(f"https://ec.jooble.org/SearchResult?ukw={perfil.replace(' ', '%20')}&rgns=Quito")
             
-            
             time.sleep(8)
             
             ofertas_perfil = 0
@@ -58,7 +75,7 @@ def recolector_fuerza_bruta():
             while ofertas_perfil < 200:
                 # Scroll suave
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(2) # Pausa para que respire
+                time.sleep(2) 
                 
                 try: driver.find_element(By.TAG_NAME, "body").send_keys(Keys.END)
                 except: pass
@@ -85,9 +102,14 @@ def recolector_fuerza_bruta():
                             try: titulo = tarjeta.find_element(By.TAG_NAME, "h2").text
                             except: titulo = "Sin Título"
 
+                            # --- AQUÍ USAMOS LA NUEVA FUNCIÓN ---
+                            salario_encontrado = extraer_salario_simple(texto_crudo)
+                            # ------------------------------------
+
                             lista_ofertas_acumulada.append({
                                 "link": link,
                                 "titulo": titulo,
+                                "salario": salario_encontrado, # <--- GUARDAMOS EL SALARIO
                                 "raw_text": texto_crudo, 
                                 "fecha_recoleccion": time.strftime("%Y-%m-%d")
                             })
