@@ -1,6 +1,6 @@
 import React from 'react';
 import { Users, DollarSign, Zap, TrendingUp, BarChart3 } from 'lucide-react';
-import StatCard from './StatCard';
+import StatCard from '../components/ui/StatCard';
 
 const Dashboard = () => {
   // Aquí es donde en el futuro llamarás a tu API de Node.js
