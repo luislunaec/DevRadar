@@ -11,7 +11,6 @@ import json
 class DetectorSueldo:
     @staticmethod
     def extraer_de_texto(soup):
-        # Buscamos en etiquetas específicas o por texto con símbolos de moneda
         texto_completo = soup.get_text(separator=" ")
         patron_estricto = r'(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?\s*US\$\s*/\s*(?:año|mes|yr|month|year))'
         matches = re.findall(patron_estricto, texto_completo, re.IGNORECASE)
@@ -60,9 +59,8 @@ def extraer_detalles_completos(url):
             desc_tag = soup.find('div', {'class': 'show-more-less-html__markup'}) or \
                        soup.find('section', {'class': 'description'})
             if desc_tag:
-                # MANTENEMOS Ñ Y TILDES: Eliminamos el .encode('ascii')...
+                # SE MANTIENE LA Ñ Y TILDES (No se usa encoding ascii)
                 texto = desc_tag.get_text(separator=" ")
-                # Solo limpiamos espacios múltiples y saltos de línea
                 resultado["description"] = re.sub(r'[\r\n\t\s]+', ' ', texto).strip()
 
             resultado["salary_extracted"] = DetectorSueldo.extraer_de_texto(soup)
@@ -76,21 +74,21 @@ def extraer_detalles_completos(url):
 def ejecutar():
     print("🚀 INICIANDO SCRAPER...")
 
-    busquedas = ["Desarrollador Software", "Fullstack Developer",
+    busquedas = ["Desarrollador Software", "Fullstack Developer", "Backend Developer", "Frontend Developer",
                  "Product Owner"]
     df_lista = []
 
     for t in busquedas:
         print(f"Buscando: {t}...")
+        # Aquí forzamos linkedin como plataforma
         jobs = scrape_jobs(site_name=["linkedin"], search_term=t, location="Ecuador", results_wanted=5)
-        # Guardamos el término de búsqueda para el campo rol_busqueda
         jobs['rol_busqueda'] = t
+        jobs['plataforma'] = "linkedin"
         df_lista.append(jobs)
 
     df = pd.concat(df_lista).drop_duplicates(subset=['job_url'])
     df['date_posted'] = df['date_posted'].apply(ProcesadorData.corregir_fecha)
 
-    # Listas para nuevos datos
     descripciones = []
     sueldos = []
 
@@ -100,8 +98,9 @@ def ejecutar():
         sueldos.append(info["salary_extracted"])
         print(f"🔗 Procesado: {url[:40]}... | Sueldo: {info['salary_extracted']}")
 
-    # Mapeo de columnas al formato solicitado
+    # Formato final solicitado
     df_final = pd.DataFrame({
+        "plataforma": df['plataforma'],
         "rol_busqueda": df['rol_busqueda'],
         "fecha_publicacion": df['date_posted'],
         "oferta_laboral": df['title'],
@@ -112,9 +111,9 @@ def ejecutar():
         "url_publicacion": df['job_url']
     })
 
-    # Guardado asegurando UTF-8 para las Ñs
+    # Guardado con force_ascii=False para respetar los caracteres latinos
     df_final.to_json("data_completa_sueldos.json", orient="records", indent=4, force_ascii=False)
-    print("✨ Proceso finalizado. Archivo 'data_completa_sueldos.json' generado con éxito.")
+    print("✨ Proceso finalizado. El JSON respeta Ñs y tildes.")
 
 
 if __name__ == "__main__":
