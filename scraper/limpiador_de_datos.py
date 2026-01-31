@@ -1,209 +1,160 @@
-import re
 import os
-import pandas as pd
+import time
+from typing import List, Optional
+from dotenv import load_dotenv
+from pydantic import BaseModel, Field
 from supabase_helper import supabase
 
-# =============================================================================
-# 🧠 MAPA TECNOLÓGICO (REGEX SALVAVIDAS)
-# =============================================================================
-MAPA_TECNOLOGIAS = {
-    # --- Lenguajes ---
-    r'\bpython\b': 'PYTHON', r'\bjava\b': 'JAVA', r'\bjavascript\b': 'JAVASCRIPT',
-    r'\btypescript\b': 'TYPESCRIPT', r'\bphp\b': 'PHP', r'c\s*#': 'C#',          
-    r'\.net\b': '.NET', r'\.net core\b': '.NET CORE', r'\bscala\b': 'SCALA',
-    r'\bgolang\b': 'GO', r'\bkotlin\b': 'KOTLIN', r'\bruby\b': 'RUBY',
-    r'\bswift\b': 'SWIFT', r'\bflutter\b': 'FLUTTER',
+# Librerías de IA
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
 
-    # --- Backend & Frameworks ---
-    r'\bspring\b': 'SPRING', r'\bspring boot\b': 'SPRING BOOT', r'\bnodejs\b': 'NODE.JS',
-    r'\bnode\b': 'NODE.JS', r'\bexpress\b': 'EXPRESS', r'\bdjango\b': 'DJANGO',
-    r'\bflask\b': 'FLASK', r'\bhibernate\b': 'HIBERNATE', r'\bjpa\b': 'JPA',              
-    r'\bquarkus\b': 'QUARKUS', r'\bapis?\s?rest': 'API REST',
-
-    # --- Frontend ---
-    r'\breact\b': 'REACT', r'\breact native\b': 'REACT NATIVE', r'\bangular\b': 'ANGULAR',
-    r'\bvue\b': 'VUE.JS', r'\bhtml\b': 'HTML', r'\bcss\b': 'CSS', r'\bjquery\b': 'JQUERY',        
-    r'\btailwind\b': 'TAILWIND', r'\bbootstrap\b': 'BOOTSTRAP',
-
-    # --- BASES DE DATOS ---
-    r'\bsql\b': 'SQL', r'\bnosql\b': 'NOSQL', r'\bmysql\b': 'MYSQL', r'\bpostgres\b': 'POSTGRESQL',
-    r'\bsql server\b': 'SQL SERVER', r'\bmongodb\b': 'MONGODB', r'\boracle\b': 'ORACLE',
-    r'\bhadoop\b': 'HADOOP', r'\bspark\b': 'SPARK', r'\bkafka\b': 'KAFKA', r'\betl\b': 'ETL',
-    r'\binformatica\b': 'INFORMATICA (ETL)', r'\btalend\b': 'TALEND', r'\bdata lake': 'DATA LAKE',
-    r'\bbig data\b': 'BIG DATA',
-
-    # --- INFRAESTRUCTURA ---
-    r'\baws\b': 'AWS', r'\bazure\b': 'AZURE', r'\bdocker\b': 'DOCKER', r'\bkubernetes\b': 'KUBERNETES',
-    r'\bjenkins\b': 'JENKINS', r'\bgit\b': 'GIT', r'\bgithub\b': 'GITHUB', r'\bci/cd\b': 'CI/CD',
-    r'\blinux\b': 'LINUX',
-
-    # --- Herramientas ---
-    r'\bexcel\b': 'EXCEL', r'\bpower bi\b': 'POWER BI', r'\btableau\b': 'TABLEAU',
-    r'\bqa\b': 'QA/TESTING', r'\bautomatizaci[oó]n\b': 'QA AUTOMATION', 
-    r'\bscrum\b': 'SCRUM', r'\bagile\b': 'AGILE', r'\bjira\b': 'JIRA',
-    r'\bfigma\b': 'FIGMA', r'\bvs\s?code\b': 'VS CODE'
-}
+# Cargar variables de entorno
+load_dotenv()
 
 # =============================================================================
-# 🕵️‍♂️ FUNCIONES AUXILIARES (LÓGICA PURA)
+# 🧠 MODELO DE DATOS (ESTRUCTURA QUE QUEREMOS DE LA IA)
 # =============================================================================
-def detectar_ubicacion(texto_completo, default="Quito"):
-    if not isinstance(texto_completo, str): return default
-    texto = texto_completo.lower()
-    if "remoto" in texto: return "Remoto"
-    if "hibrido" in texto or "híbrido" in texto: return "Híbrido"
-    if "guayaquil" in texto: return "Guayaquil"
-    if "cuenca" in texto: return "Cuenca"
-    return default
+class JobAnalysis(BaseModel):
+    """Estructura de salida estricta para el análisis de la oferta."""
+    es_oferta_valida_tech: bool = Field(
+        description="True si es un trabajo de tecnología (Desarrollo, Data, QA, DevOps, Producto). False si es chofer, ventas, medicina, etc."
+    )
+    skills: List[str] = Field(
+        description="Lista de habilidades técnicas encontradas (ej: Python, React, AWS, SQL). Normalizadas a mayúsculas."
+    )
+    seniority: str = Field(
+        description="Nivel de experiencia: Trainee, Junior, Semi-Senior, Senior, Lead, o 'No especificado'."
+    )
+    sueldo_normalizado: str = Field(
+        description="El sueldo extraído limpio si existe, o 'No especificado'."
+    )
+    ubicacion_tipo: str = Field(
+        description="Remoto, Híbrido o Presencial."
+    )
 
-def extraer_skills_regex(texto):
-    if not isinstance(texto, str): return []
-    texto_limpio = texto.lower()
-    # Limpieza básica para que el regex agarre mejor
-    texto_limpio = re.sub(r'[^a-z0-9\+\.#]', ' ', texto_limpio)
-    texto_limpio = f" {texto_limpio} " 
-    skills = set()
-    for patron, tech in MAPA_TECNOLOGIAS.items():
-        if re.search(patron, texto_limpio): skills.add(tech)
-    return list(skills)
+# =============================================================================
+# 🤖 CLASE PROCESADORA CON IA
+# =============================================================================
+class JobAIProcessor:
+    def __init__(self):
+        # Usamos gpt-4o-mini porque es muy económico y excelente para extracción
+        self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.embeddings_model = OpenAIEmbeddings(model="text-embedding-3-small")
+        
+        # Configuración del parser para obligar a la IA a devolver JSON válido
+        self.parser = PydanticOutputParser(pydantic_object=JobAnalysis)
+        
+        # El Prompt para el LLM
+        self.prompt = ChatPromptTemplate.from_messages([
+            ("system", "Eres un experto reclutador IT. Tu trabajo es extraer información técnica precisa de ofertas de trabajo. "
+                       "Ignora ofertas que no sean del rubro tecnológico. \n{format_instructions}"),
+            ("human", "Analiza la siguiente oferta:\nTITULO: {titulo}\nDESCRIPCIÓN: {descripcion}")
+        ]).partial(format_instructions=self.parser.get_format_instructions())
 
-def limpiar_sueldo_csv(valor):
-    if pd.isna(valor) or str(valor).strip() == "" or "No especificado" in str(valor): return None
-    # Limpieza de basura del CSV (ej: "US$ 1000 (Mensual)")
-    t = str(valor).replace("US$", "").replace("(Mensual)", "").replace(".", "").split(",")[0].split("+")[0]
-    return t.strip()
+        self.chain = self.prompt | self.llm | self.parser
 
-def es_oferta_valida(titulo, skills_detectadas):
-    titulo = titulo.lower()
+    def analizar_oferta(self, titulo: str, descripcion: str) -> JobAnalysis:
+        """Envía el texto a la IA y retorna un objeto estructurado."""
+        try:
+            # Invocamos a la IA
+            return self.chain.invoke({"titulo": titulo, "descripcion": descripcion})
+        except Exception as e:
+            print(f"⚠️ Error analizando oferta '{titulo}': {e}")
+            # Retornamos un objeto 'vacío' seguro en caso de error de API
+            return JobAnalysis(es_oferta_valida_tech=False, skills=[], seniority="", sueldo_normalizado="", ubicacion_tipo="")
+
+    def generar_embedding(self, texto: str) -> List[float]:
+        """Genera el vector numérico para búsqueda semántica."""
+        try:
+            # Limpiamos saltos de línea para mejor calidad del embedding
+            texto_limpio = texto.replace("\n", " ")
+            return self.embeddings_model.embed_query(texto_limpio)
+        except Exception as e:
+            print(f"⚠️ Error generando embedding: {e}")
+            return []
+
+# =============================================================================
+# 🚀 EJECUCIÓN PRINCIPAL
+# =============================================================================
+def ejecutar_limpieza_ia():
+    print(f"🤖 INICIANDO PROCESAMIENTO CON IA...")
     
-    # 1. FILTRO DE BASURA (Bloqueamos trabajos no-tech)
-    basura = [
-        "chofer", "vendedor", "cajero", "limpieza", "tesorero", "contable", 
-        "recepcionista", "enfermero", "medico", "cocinero", "mesero", 
-        "asesor comercial", "asesor de ventas", "call center", "atención al cliente",
-        "bilingüe", "profesor de inglés", "secretaria", "asistente administrativo",
-        "guardia", "bodeguero", "impulsador"
-    ]
-    if any(p in titulo for p in basura): return False
+    processor = JobAIProcessor()
 
-    # 2. LÓGICA ANTI-OFFICE (Si solo sabe Excel, chao)
-    tech_real = [s for s in skills_detectadas if s not in ["EXCEL", "WORD", "ENGLISH", "OFFICE", "POWERPOINT"]]
-    
-    # Si tiene skills técnicas reales, PASA.
-    if len(tech_real) > 0: return True
-
-    # 3. RESCATE POR TÍTULO (Si no hay skills pero el título es claro)
-    tech_keywords = [
-        "desarrollador", "developer", "programador", "sistemas", "software", 
-        "devops", "qa ", "tester", "datos", "data", "ti ", "it ", "informática",
-        "computación", "full stack", "backend", "frontend", "tecnología"
-    ]
-    if any(k in titulo for k in tech_keywords): return True
-    
-    return False
-
-# =============================================================================
-# 🚀 EJECUCIÓN LIMPIEZA Y PROCESAMIENTO DE SCRAPERS
-# =============================================================================
-def ejecutar_limpieza_base():
-    print(f"🧹 INICIANDO LIMPIEZA DE DATOS DE SCRAPERS...")
-    
-    # 1. CARGAR DATOS CRUDOS DE SUPABASE
+    # 1. CARGAR DATOS CRUDOS
     print("📂 Cargando ofertas crudas de Supabase (jobs_raw)...")
     try:
+        # Traemos solo los que no están procesados (puedes ajustar esta lógica)
         response = supabase.table('jobs_raw').select('*').execute()
         data_final = response.data if response.data else []
-        print(f"   ✓ {len(data_final)} ofertas crudas cargadas")
     except Exception as e:
-        print(f"   ❌ Error cargando datos: {e}")
+        print(f"❌ Error cargando datos: {e}")
         return
 
-    # 4. PROCESAMIENTO Y EXTRACCIÓN DE HABILIDADES
+    print(f"🔄 Procesando {len(data_final)} ofertas...")
+    
     resultados = []
     ids_vistos = set()
-    print(f"\n🔄 Analizando {len(data_final)} ofertas y extrayendo habilidades...")
-    
+
     for i, item in enumerate(data_final):
         url = item.get("url_publicacion", "")
         if not url or url in ids_vistos: continue
-        
+
         titulo = item.get("oferta_laboral", "Sin Título")
         descripcion = item.get("descripcion", "")
-        texto_analisis = f"{titulo} {descripcion}" 
-        
-        # A. EXTRACCIÓN DE SKILLS (REGEX)
-        skills = extraer_skills_regex(texto_analisis)
-        
-        # B. FILTRO DE VALIDEZ
-        if not es_oferta_valida(titulo, skills): continue
+        texto_completo = f"{titulo}. {descripcion}"
 
-        # C. PREPARAR DATOS EN FORMATO FINAL
-        sueldo = item.get("sueldo")
-        # En jobs_clean, sueldo es TEXT, así que convertimos todo a string
-        if sueldo is None or pd.isna(sueldo) or (isinstance(sueldo, str) and "No especificado" in str(sueldo)):
-            sueldo = "No especificado"
-        elif isinstance(sueldo, (int, float)):
-            sueldo = str(sueldo)
-        else:
-            sueldo = str(sueldo) if sueldo else "No especificado"
+        # --- A. ANÁLISIS IA (EXTRACCIÓN) ---
+        analisis = processor.analizar_oferta(titulo, descripcion)
 
-        registro = {
-            "plataforma": str(item.get("plataforma", "")) if item.get("plataforma") else "",
-            "rol_busqueda": str(item.get("rol_busqueda", "")) if item.get("rol_busqueda") else "",
-            "fecha_publicacion": str(item.get("fecha_publicacion", "")) if item.get("fecha_publicacion") else "",
-            "oferta_laboral": str(titulo) if titulo else "Sin Título",
-            "locacion": str(item.get("locacion", "Ecuador")) if item.get("locacion") else "Ecuador",
-            "descripcion": str(descripcion) if descripcion else "",
-            "sueldo": str(sueldo),
-            "compania": str(item.get("compania", "Confidencial")) if item.get("compania") else "Confidencial",
-            "habilidades": ", ".join(sorted(skills)) if skills else "",
-            "url_publicacion": str(url) if url else ""
-        }
-        
-        # Validar campos requeridos
-        if not registro["plataforma"] or not registro["oferta_laboral"] or not registro["url_publicacion"]:
+        # --- B. FILTRO DE VALIDEZ ---
+        if not analisis.es_oferta_valida_tech:
+            # Opcional: Podrías loguear qué ofertas se descartan
             continue
+
+        # --- C. GENERACIÓN DE EMBEDDING (VECTOR) ---
+        # Vectorizamos skills + titulo para búsqueda eficiente
+        texto_a_vectorizar = f"{titulo} {' '.join(analisis.skills)}"
+        vector = processor.generar_embedding(texto_a_vectorizar)
+
+        # --- D. PREPARAR REGISTRO ---
+        registro = {
+            "plataforma": item.get("plataforma", ""),
+            "rol_busqueda": item.get("rol_busqueda", ""),
+            "fecha_publicacion": item.get("fecha_publicacion", ""),
+            "oferta_laboral": titulo,
+            "locacion": item.get("locacion", "Ecuador"), # O usar analisis.ubicacion_tipo
+            "descripcion": descripcion,
+            "sueldo": analisis.sueldo_normalizado if analisis.sueldo_normalizado != "No especificado" else str(item.get("sueldo", "")),
+            "compania": item.get("compania", "Confidencial"),
+            "habilidades": ", ".join(analisis.skills), # Guardamos como string separado por comas
+            "seniority": analisis.seniority, # Nuevo campo enriquecido
+            "url_publicacion": url,
+            "embedding": vector # Asegúrate que tu DB soporte vectores
+        }
+
         resultados.append(registro)
         ids_vistos.add(url)
-
-    # 5. GUARDAR EN SUPABASE (jobs_clean)
-    if resultados:
-        print(f"\n💾 Guardando {len(resultados)} ofertas limpias en Supabase (jobs_clean)...")
-        exitos = 0
         
+        # Rate limiting simple para no saturar
+        if i % 10 == 0: print(f"   ⏳ Procesados {i+1}...")
+
+    # 3. GUARDAR EN SUPABASE
+    if resultados:
+        print(f"\n💾 Guardando {len(resultados)} ofertas procesadas por IA en 'jobs_clean'...")
+        exitos = 0
         for registro in resultados:
             try:
-                # Asegurar que todos los campos requeridos estén presentes
-                registro_limpio = {
-                    'plataforma': registro.get('plataforma', ''),
-                    'rol_busqueda': registro.get('rol_busqueda', ''),
-                    'fecha_publicacion': registro.get('fecha_publicacion', ''),
-                    'oferta_laboral': registro.get('oferta_laboral', 'Sin Título'),
-                    'locacion': registro.get('locacion', 'Ecuador'),
-                    'descripcion': registro.get('descripcion', ''),
-                    'sueldo': registro.get('sueldo', 'No especificado'),
-                    'compania': registro.get('compania', 'Confidencial'),
-                    'habilidades': registro.get('habilidades', ''),
-                    'url_publicacion': registro.get('url_publicacion', '')
-                }
-                
-                # Validar campos requeridos
-                if not registro_limpio['plataforma'] or not registro_limpio['oferta_laboral'] or not registro_limpio['url_publicacion']:
-                    continue
-                
-                supabase.table('jobs_clean').upsert(registro_limpio, on_conflict='url_publicacion').execute()
+                supabase.table('jobs_clean').upsert(registro, on_conflict='url_publicacion').execute()
                 exitos += 1
             except Exception as e:
-                error_msg = str(e)
-                if 'duplicate key' not in error_msg.lower() and 'unique constraint' not in error_msg.lower():
-                    print(f"⚠️ Error guardando oferta {registro.get('url_publicacion', '')[:30]}: {error_msg[:100]}")
+                print(f"⚠️ Error guardando: {e}")
         
-        print(f"\n✨ ¡LIMPIEZA COMPLETADA!")
-        print(f"📊 Total ofertas válidas (TI): {len(resultados)}")
-        print(f"✅ {exitos}/{len(resultados)} ofertas guardadas en Supabase (jobs_clean)")
-        print("🚀 Listo para generar embeddings.")
+        print(f"✅ Éxito: {exitos}/{len(resultados)} guardados.")
     else:
-        print("❌ No quedaron registros válidos después del filtro.")
+        print("❌ Ninguna oferta pasó el filtro de la IA.")
 
 if __name__ == "__main__":
-    ejecutar_limpieza_base()
+    ejecutar_limpieza_ia()
