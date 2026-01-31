@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 import re
 import json
 
-
 class RecolectorComputrabajo:
     """
     Scraper mejorado con salida en formato JSON y contador por rol
@@ -125,8 +124,10 @@ class RecolectorComputrabajo:
                         fecha_texto, descripcion = self.parse_detalle(link)
                         fecha_calculada = self.parsear_fecha(fecha_texto) if fecha_texto else ''
 
+                        # --- AQUÍ ESTÁ EL CAMBIO SOLICITADO ---
                         self.datos.append({
-                            'rol_busqueda': rol,  # Nuevo: guardar el rol de búsqueda
+                            'plataforma': 'computrabajo',     # <-- Campo Nuevo Agregado
+                            'rol_busqueda': rol,
                             'fecha_publicacion': fecha_calculada,
                             'oferta_laboral': oferta_laboral,
                             'locacion': locacion,
@@ -135,6 +136,7 @@ class RecolectorComputrabajo:
                             'compania': compania,
                             'url_publicacion': link,
                         })
+                        # --------------------------------------
 
                         contador_rol += 1
                         ofertas_pagina += 1
@@ -201,7 +203,8 @@ class RecolectorComputrabajo:
         df = pd.DataFrame(self.datos)
 
         print(f"\nRegistros antes de eliminar duplicados: {len(df)}")
-        df.drop_duplicates(subset=['url_publicacion'], inplace=True)
+        if not df.empty:
+            df.drop_duplicates(subset=['url_publicacion'], inplace=True)
         print(f"Registros después de eliminar duplicados: {len(df)}")
 
         # Convertir a JSON
@@ -211,6 +214,7 @@ class RecolectorComputrabajo:
 
 if __name__ == "__main__":
     inicio = time.time()
+    # Puedes editar esta lista según tus necesidades
     roles = [
     # --- GENERALISTAS Y CLÁSICOS ---
     "sistemas de información",
@@ -327,10 +331,11 @@ if __name__ == "__main__":
     "diseñador web",
     "product designer"
     ]
+    
     bot = RecolectorComputrabajo(roles)
-    bot.recolectar(paginas_por_rol=3)
+    bot.recolectar(paginas_por_rol=1) # Puse 1 página para probar rápido, cámbialo a 3 si deseas
 
-    fin = time.time()  # ⏱ fin del cronómetro
+    fin = time.time()
     tiempo_total = fin - inicio
 
     print(f"\nTiempo total de ejecución: {tiempo_total:.2f} segundos")
