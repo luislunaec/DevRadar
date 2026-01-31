@@ -4,43 +4,48 @@ import os
 import pandas as pd
 
 # =============================================================================
-# ⚙️ CONFIGURACIÓN
-# =============================================================================
-PROMEDIO_MERCADO_TI = 906 
-
-# =============================================================================
-# 🧠 MAPA DE SKILLS (V9)
+# 🧠 MAPA TECNOLÓGICO (REGEX SALVAVIDAS)
 # =============================================================================
 MAPA_TECNOLOGIAS = {
-    # --- Lenguajes de programacion ---
-    r'\bpython\b': 'PYTHON', r'\bjava\b': 'JAVA', r'\bjs\b': 'JAVASCRIPT', r'\bjavascript\b': 'JAVASCRIPT',
-    r'\bts\b': 'TYPESCRIPT', r'\btypescript\b': 'TYPESCRIPT', r'\bphp\b': 'PHP', r'c\s*#': 'C#',          
-    r'\.net\b': '.NET', r'\.net core\b': '.NET CORE', r'\bvb\b': 'VISUAL BASIC', r'\bvb\.net\b': 'VISUAL BASIC',   
-    r'\bcpp\b': 'C++', r'c\s*\+\+': 'C++', r'\bscala\b': 'SCALA', r'\bgolang\b': 'GO',              
-    r'\bkotlin\b': 'KOTLIN', r'\bruby\b': 'RUBY', r'\bswift\b': 'SWIFT', r'\bflutter\b': 'FLUTTER',              
-    # --- Backend ---
-    r'\bspring\b': 'SPRING', r'\bspring boot\b': 'SPRING BOOT', r'\bnodejs\b': 'NODE.JS', r'\bnode\b': 'NODE.JS',
-    r'\bexpress\b': 'EXPRESS', r'\bdjango\b': 'DJANGO', r'\bflask\b': 'FLASK', r'\bhibernate\b': 'HIBERNATE', 
-    r'\bjpa\b': 'JPA', r'\bapis?\s?rest': 'API REST',              
+    # --- Lenguajes ---
+    r'\bpython\b': 'PYTHON', r'\bjava\b': 'JAVA', r'\bjavascript\b': 'JAVASCRIPT',
+    r'\btypescript\b': 'TYPESCRIPT', r'\bphp\b': 'PHP', r'c\s*#': 'C#',          
+    r'\.net\b': '.NET', r'\.net core\b': '.NET CORE', r'\bscala\b': 'SCALA',
+    r'\bgolang\b': 'GO', r'\bkotlin\b': 'KOTLIN', r'\bruby\b': 'RUBY',
+    r'\bswift\b': 'SWIFT', r'\bflutter\b': 'FLUTTER',
+
+    # --- Backend & Frameworks ---
+    r'\bspring\b': 'SPRING', r'\bspring boot\b': 'SPRING BOOT', r'\bnodejs\b': 'NODE.JS',
+    r'\bnode\b': 'NODE.JS', r'\bexpress\b': 'EXPRESS', r'\bdjango\b': 'DJANGO',
+    r'\bflask\b': 'FLASK', r'\bhibernate\b': 'HIBERNATE', r'\bjpa\b': 'JPA',              
+    r'\bquarkus\b': 'QUARKUS', r'\bapis?\s?rest': 'API REST',
+
     # --- Frontend ---
-    r'\breact\b': 'REACT', r'\breact native\b': 'REACT NATIVE', r'\bangular\b': 'ANGULAR', r'\bvue\b': 'VUE.JS',
-    r'\bhtml\b': 'HTML', r'\bcss\b': 'CSS', r'\bjquery\b': 'JQUERY', r'\btailwind\b': 'TAILWIND', r'\bbootstrap\b': 'BOOTSTRAP',              
-    # --- Persistencia de datos ---
+    r'\breact\b': 'REACT', r'\breact native\b': 'REACT NATIVE', r'\bangular\b': 'ANGULAR',
+    r'\bvue\b': 'VUE.JS', r'\bhtml\b': 'HTML', r'\bcss\b': 'CSS', r'\bjquery\b': 'JQUERY',        
+    r'\btailwind\b': 'TAILWIND', r'\bbootstrap\b': 'BOOTSTRAP',
+
+    # --- BASES DE DATOS ---
     r'\bsql\b': 'SQL', r'\bnosql\b': 'NOSQL', r'\bmysql\b': 'MYSQL', r'\bpostgres\b': 'POSTGRESQL',
-    r'\bsql server\b': 'SQL SERVER', r'\bmongodb\b': 'MONGODB', r'\boracle\b': 'ORACLE', r'\bhadoop\b': 'HADOOP',
-    r'\bspark\b': 'SPARK', r'\bkafka\b': 'KAFKA', r'\betl\b': 'ETL', r'\bbig data\b': 'BIG DATA', r'\bpl/?sql\b': 'PL/SQL',         
-    # --- Nubes de infraestructura---
-    r'\baws\b': 'AWS', r'\bazure\b': 'AZURE', r'\bgcp\b': 'GOOGLE CLOUD', r'\bdocker\b': 'DOCKER',
-    r'\bkubernetes\b': 'KUBERNETES', r'\bk8s\b': 'KUBERNETES', r'\bjenkins\b': 'JENKINS', r'\bgit\b': 'GIT',
-    r'\bci/?\s?cd\b': 'CI/CD', r'\blinux\b': 'LINUX', r'\bterraform\b': 'TERRAFORM',    
-    # --- Herramientas y metodologias Agiles ---
-    r'\bexcel\b': 'EXCEL', r'\bpower bi\b': 'POWER BI', r'\bpbi\b': 'POWER BI', r'\btableau\b': 'TABLEAU',
-    r'\bqa\b': 'QA/TESTING', r'\bautomatizaci[oó]n\b': 'QA AUTOMATION', r'\bselenium\b': 'SELENIUM',      
-    r'\bscrum\b': 'SCRUM', r'\bagile\b': 'AGILE', r'\bjira\b': 'JIRA', r'\bfigma\b': 'FIGMA'     
+    r'\bsql server\b': 'SQL SERVER', r'\bmongodb\b': 'MONGODB', r'\boracle\b': 'ORACLE',
+    r'\bhadoop\b': 'HADOOP', r'\bspark\b': 'SPARK', r'\bkafka\b': 'KAFKA', r'\betl\b': 'ETL',
+    r'\binformatica\b': 'INFORMATICA (ETL)', r'\btalend\b': 'TALEND', r'\bdata lake': 'DATA LAKE',
+    r'\bbig data\b': 'BIG DATA',
+
+    # --- INFRAESTRUCTURA ---
+    r'\baws\b': 'AWS', r'\bazure\b': 'AZURE', r'\bdocker\b': 'DOCKER', r'\bkubernetes\b': 'KUBERNETES',
+    r'\bjenkins\b': 'JENKINS', r'\bgit\b': 'GIT', r'\bgithub\b': 'GITHUB', r'\bci/cd\b': 'CI/CD',
+    r'\blinux\b': 'LINUX',
+
+    # --- Herramientas ---
+    r'\bexcel\b': 'EXCEL', r'\bpower bi\b': 'POWER BI', r'\btableau\b': 'TABLEAU',
+    r'\bqa\b': 'QA/TESTING', r'\bautomatizaci[oó]n\b': 'QA AUTOMATION', 
+    r'\bscrum\b': 'SCRUM', r'\bagile\b': 'AGILE', r'\bjira\b': 'JIRA',
+    r'\bfigma\b': 'FIGMA', r'\bvs\s?code\b': 'VS CODE'
 }
 
 # =============================================================================
-# 🕵️‍♂️ FUNCIONES
+# 🕵️‍♂️ FUNCIONES AUXILIARES (LÓGICA PURA)
 # =============================================================================
 def detectar_ubicacion(texto_completo, default="Quito"):
     if not isinstance(texto_completo, str): return default
@@ -51,11 +56,11 @@ def detectar_ubicacion(texto_completo, default="Quito"):
     if "cuenca" in texto: return "Cuenca"
     return default
 
-def extraer_skills(texto):
+def extraer_skills_regex(texto):
     if not isinstance(texto, str): return []
     texto_limpio = texto.lower()
+    # Limpieza básica para que el regex agarre mejor
     texto_limpio = re.sub(r'[^a-z0-9\+\.#]', ' ', texto_limpio)
-    texto_limpio = re.sub(r'\s+', ' ', texto_limpio)
     texto_limpio = f" {texto_limpio} " 
     skills = set()
     for patron, tech in MAPA_TECNOLOGIAS.items():
@@ -64,69 +69,72 @@ def extraer_skills(texto):
 
 def limpiar_sueldo_csv(valor):
     if pd.isna(valor) or str(valor).strip() == "" or "No especificado" in str(valor): return None
+    # Limpieza de basura del CSV (ej: "US$ 1000 (Mensual)")
     t = str(valor).replace("US$", "").replace("(Mensual)", "").replace(".", "").split(",")[0].split("+")[0]
     return t.strip()
 
 def es_oferta_valida(titulo, skills_detectadas):
     titulo = titulo.lower()
-    basura = ["chofer", "vendedor", "cajero", "limpieza", "tesorero", "contable", "recepcionista", "enfermero", "medico", "cocinero", "mesero"]
+    
+    # 1. FILTRO DE BASURA (Bloqueamos trabajos no-tech)
+    basura = [
+        "chofer", "vendedor", "cajero", "limpieza", "tesorero", "contable", 
+        "recepcionista", "enfermero", "medico", "cocinero", "mesero", 
+        "asesor comercial", "asesor de ventas", "call center", "atención al cliente",
+        "bilingüe", "profesor de inglés", "secretaria", "asistente administrativo",
+        "guardia", "bodeguero", "impulsador"
+    ]
     if any(p in titulo for p in basura): return False
-    tech_real = [s for s in skills_detectadas if s not in ["EXCEL", "WORD", "ENGLISH", "OFFICE"]]
+
+    # 2. LÓGICA ANTI-OFFICE (Si solo sabe Excel, chao)
+    tech_real = [s for s in skills_detectadas if s not in ["EXCEL", "WORD", "ENGLISH", "OFFICE", "POWERPOINT"]]
+    
+    # Si tiene skills técnicas reales, PASA.
     if len(tech_real) > 0: return True
-    tech_keywords = ["desarrollador", "developer", "programador", "sistemas", "software", "devops", "qa ", "tester", "datos", "data", "ti ", "it "]
+
+    # 3. RESCATE POR TÍTULO (Si no hay skills pero el título es claro)
+    tech_keywords = [
+        "desarrollador", "developer", "programador", "sistemas", "software", 
+        "devops", "qa ", "tester", "datos", "data", "ti ", "it ", "informática",
+        "computación", "full stack", "backend", "frontend", "tecnología"
+    ]
     if any(k in titulo for k in tech_keywords): return True
+    
     return False
 
-def calcular_competitividad(salario_txt):
-    if not salario_txt or salario_txt == "No especificado": return "N/A"
-    try:
-        monto = float(str(salario_txt).replace(".","").replace(",",""))
-        if monto > 10000: monto /= 100
-        diff = monto - PROMEDIO_MERCADO_TI
-        if diff > 50: return "ENCIMA 🟢"
-        elif diff < -50: return "DEBAJO 🔴"
-        else: return "PROMEDIO 🟡"
-    except: return "N/A"
-
 # =============================================================================
-# 🚀 EJECUCIÓN MAESTRA (CORREGIDA)
+# 🚀 EJECUCIÓN FASE 1 (SOLO LIMPIEZA)
 # =============================================================================
-def ejecutar_limpieza_completa():
-    print(f"🧹 EJECUTANDO LIMPIEZA V11 (ARREGLO DE EMPRESAS JOOBLE)...")
+def ejecutar_limpieza_base():
+    print(f"🧹 INICIANDO FASE 1: LIMPIEZA DE DATOS (SIN IA DE SUELDOS)...")
     
     data_final = []
     ids_vistos = set()
     
-    # --- 1. CARGAR JOOBLE (CORREGIDO) ---
+    # 1. CARGAR JOOBLE
     if os.path.exists("data_cruda_jooble.json"):
         with open("data_cruda_jooble.json", "r", encoding="utf-8") as f:
-            jooble = json.load(f)
-            print(f"📥 Jooble: {len(jooble)} registros.")
-            for item in jooble:
-                # Normalizamos y tratamos de rescatar el nombre de la empresa
+            for item in json.load(f):
                 data_final.append({
                     "titulo": item.get("titulo", "Sin Título"),
                     "raw_text": item.get("raw_text", ""),
                     "link": item.get("link", ""),
                     "fecha_recoleccion": item.get("fecha_recoleccion"),
                     "origen": "Jooble",
-                    "salario_csv": None,
+                    "salario_detectado": None,
                     "ubicacion_csv": None,
-                    # AQUÍ ESTÁ EL ARREGLO: Buscamos 'empresa' o 'company', si no hay, 'Confidencial'
                     "empresa_detectada": item.get("empresa", item.get("company", "Confidencial"))
                 })
 
-    # --- 2. CARGAR CSV AMIGO ---
+    # 2. CARGAR CSV (MULTITRABAJOS / SCRAPY)
     if os.path.exists("ofertas_crudas.csv"):
         try:
-            try: df = pd.read_csv("ofertas_crudas.csv", encoding='utf-8', sep=',')
-            except: df = pd.read_csv("ofertas_crudas.csv", encoding='latin-1', sep=';')
+            df = pd.read_csv("ofertas_crudas.csv", encoding='latin-1', sep=';')
             if df.shape[1] < 2: df = pd.read_csv("ofertas_crudas.csv", encoding='latin-1', sep=',')
             
-            print(f"📥 CSV Amigo: {len(df)} registros.")
             for _, row in df.iterrows():
                 titulo = str(row.get("oferta_laboral", "Sin Título")).replace("PostuladoVista", "").strip()
-                desc = str(row.get("descripcion", "")) + " " + str(row.get("detalle", "")) + " " + str(row.get("rol_busqueda", ""))
+                desc = str(row.get("descripcion", "")) + " " + str(row.get("detalle", ""))
                 
                 data_final.append({
                     "titulo": titulo,
@@ -134,61 +142,84 @@ def ejecutar_limpieza_completa():
                     "link": str(row.get("url_publicacion", "")),
                     "fecha_recoleccion": "2026-01-22",
                     "origen": "Multitrabajos",
-                    "salario_csv": limpiar_sueldo_csv(row.get("sueldo", "")),
+                    "salario_detectado": limpiar_sueldo_csv(row.get("sueldo", "")),
                     "ubicacion_csv": str(row.get("lugar", "")),
-                    # Para el CSV, el nombre ya viene listo
                     "empresa_detectada": str(row.get("compania", "Confidencial"))
                 })
         except: pass
 
-    # --- 3. PROCESAMIENTO ---
+    # 3. CARGAR LINKEDIN
+    archivo_linkedin = "data_cruda_linkedin.json"
+    if os.path.exists(archivo_linkedin):
+        with open(archivo_linkedin, "r", encoding="utf-8") as f:
+            for item in json.load(f):
+                salario = item.get("min_amount") if item.get("min_amount") else None
+                data_final.append({
+                    "titulo": item.get("title", "Sin Título"),
+                    "raw_text": item.get("description", ""),
+                    "link": item.get("job_url", ""),
+                    "fecha_recoleccion": "2026-01-23",
+                    "origen": "LinkedIn",
+                    "salario_detectado": salario,
+                    "ubicacion_csv": item.get("location", "Ecuador"),
+                    "empresa_detectada": item.get("company", "Confidencial")
+                })
+
+    # 4. PROCESAMIENTO Y FILTRADO
     resultados = []
-    print(f"🔄 Procesando {len(data_final)} ofertas totales...")
+    print(f"🔄 Analizando {len(data_final)} ofertas crudas...")
     
-    for item in data_final:
+    for i, item in enumerate(data_final):
         link = item.get("link", "")
-        if link in ids_vistos: continue
+        if not link or link in ids_vistos: continue
         
         titulo = item.get("titulo", "Sin Título")
         raw_text = item.get("raw_text", "")
         texto_analisis = f"{titulo} {raw_text}" 
         
-        # A. Skills y Filtro
-        skills = extraer_skills(texto_analisis)
+        # A. EXTACCIÓN DE SKILLS (REGEX)
+        skills = extraer_skills_regex(texto_analisis)
+        
+        # B. FILTRO DE VALIDEZ
         if not es_oferta_valida(titulo, skills): continue
 
-        # B. Ubicación y Salario
+        # C. PREPARAR DATOS
         ubi_final = item.get("ubicacion_csv") if item.get("ubicacion_csv") else detectar_ubicacion(texto_analisis)
-        salario = item.get("salario_csv") if item.get("salario_csv") else "No especificado"
+        salario = item.get("salario_detectado")
+        if not salario: salario = "No especificado" # Default si no venía en el CSV
 
         registro = {
             "fuente": item.get("origen"),
             "fecha": item.get("fecha_recoleccion"),
             "titulo": titulo,
-            "salario": salario,
-            "competitividad": calcular_competitividad(salario),
+            "salario": salario, # Aquí va solo lo que encontró en el CSV/JSON original
             "ubicacion": ubi_final,
+            # Guardamos las skills del Regex (VITAL para Jooble bloqueado)
             "skills": ", ".join(sorted(skills)) if skills else "Sin Detalle Técnico",
-            # AQUÍ ESTÁ EL ARREGLO FINAL: Usamos el nombre detectado, NO el texto fijo
             "empresa": item.get("empresa_detectada", "Confidencial"), 
-            "link": link
+            "link": link,
+            "raw_text": raw_text
         }
         resultados.append(registro)
         ids_vistos.add(link)
 
-    # --- GUARDAR ---
+    # 5. GUARDAR EXCEL LIMPIO
     if resultados:
         df = pd.DataFrame(resultados)
-        # Aseguramos orden de columnas
-        cols = ["fecha", "fuente", "titulo", "salario", "competitividad", "ubicacion", "skills", "empresa", "link"]
+        # Ordenamos las columnas bonito
+        cols = ["fecha", "fuente", "titulo", "salario", "ubicacion", "skills", "empresa", "link", "raw_text"]
         for c in cols: 
             if c not in df.columns: df[c] = ""
         df = df[cols]
         
-        df.to_excel("TESIS_DATA_FINAL_V11.xlsx", index=False)
-        print(f"¡LISTO! {len(resultados)} ofertas limpias guardadas en 'TESIS_DATA_FINAL.xlsx'")
+        archivo = "DATA_LIMPIA_SIN_SUELDOS.xlsx"
+        df.to_excel(archivo, index=False)
+        print(f"\n✨ ¡FASE 1 COMPLETADA!")
+        print(f"📂 Archivo generado: '{archivo}'")
+        print(f"📊 Total ofertas válidas (TI): {len(resultados)}")
+        print("🚀 Listo para la siguiente fase (Embeddings en Nube).")
     else:
-        print("Algo salió mal, no hay datos.")
+        print("❌ No quedaron registros válidos después del filtro.")
 
 if __name__ == "__main__":
-    ejecutar_limpieza_completa()
+    ejecutar_limpieza_base()
