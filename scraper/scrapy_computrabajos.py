@@ -210,36 +210,127 @@ class RecolectorComputrabajo:
 
 
 if __name__ == "__main__":
+    inicio = time.time()
     roles = [
-        "sistemas de información",
-        "ingeniero de sistemas",
-        "tecnologia",
-        "informatica",
-        "programador",
-        "desarrollador",
-        "desarrollador web",
-        "backend",
-        "frontend",
-        "full stack",
-        "software",
-        "analista de sistemas",
-        "analista ti",
-        "soporte tecnico",
-        "mesa de ayuda",
-        "devops",
-        "administrador de sistemas",
-        "administrador de redes",
-        "cloud",
-        "qa",
-        "tester",
-        "ciberseguridad",
-        "seguridad informatica",
-        "data analyst",
-        "data engineer",
-        "bases de datos",
-        "sql",
-        "python",
-        "java"
+    # --- GENERALISTAS Y CLÁSICOS ---
+    "sistemas de información",
+    "ingeniero de sistemas",
+    "ingeniería de software",
+    "tecnologia de la informacion",
+    "informatica",
+    "computacion",
+    "programador",
+    "analista programador",
+    "analista de sistemas",
+    "analista funcional",  # Muy común en banca/seguros
+    "consultor ti",
+
+    # --- DESARROLLO (Niveles y Stacks) ---
+    "desarrollador",
+    "desarrollador web",
+    "desarrollador movil",
+    "mobile developer",
+    "android developer",
+    "ios developer",
+    "backend developer",
+    "frontend developer",
+    "full stack developer",
+    "software engineer",
+    "software architect",
+    "tech lead",
+    "arquitecto de software",
+
+    # --- LENGUAJES Y FRAMEWORKS (Recruiters usan esto como título) ---
+    "java developer",
+    "python developer",
+    "net developer",
+    ".net",
+    "c#",
+    "php developer",
+    "nodejs",
+    "react developer",
+    "angular developer",
+    "vue.js",
+    "flutter",
+    "react native",
+    "wordpress",
+    "laravel",
+    "golang",
+    "ruby on rails",
+
+    # --- INFRAESTRUCTURA Y NUBE ---
+    "devops",
+    "cloud",
+    "administrador de sistemas",
+    "administrador de servidores",
+    "linux",
+    "aws",
+    "azure",
+    "virtualizacion",
+    "vmware",
+
+    # --- REDES Y SOPORTE (Volumen alto de ofertas) ---
+    "administrador de redes",
+    "ingeniero de redes",
+    "soporte tecnico",
+    "soporte ti",
+    "help desk",
+    "mesa de ayuda",
+    "tecnico de campo",
+    "mantenimiento de computadoras",
+    "microinformatica",
+
+    # --- DATOS E IA (Tendencia) ---
+    "data analyst",
+    "analista de datos",
+    "data engineer",
+    "ingeniero de datos",
+    "data scientist",
+    "cientifico de datos",
+    "business intelligence",
+    "inteligencia de negocios",
+    "big data",
+    "machine learning",
+    "inteligencia artificial",
+    "power bi",
+    "administrador de base de datos",
+    "sql server",
+
+    # --- CALIDAD Y SEGURIDAD ---
+    "qa",
+    "qa engineer",
+    "qa automation",
+    "tester",
+    "analista de calidad",
+    "ciberseguridad",
+    "seguridad informatica",
+    "seguridad de la informacion",
+
+    # --- GESTIÓN, AGILE Y PRODUCTO ---
+    "scrum master",
+    "project manager ti",
+    "gerente de proyectos ti",
+    "jefe de sistemas",
+    "gerente de ti",
+    "coordinador de sistemas",
+    "lider tecnico",
+
+    # --- ERP Y CORPORATIVO (Muy fuerte en empresas grandes) ---
+    "consultor oracle",
+    "odoo",
+    "salesforce",
+    "erp",
+    "crm",
+
+    # --- DISEÑO (Vinculado a IT) ---
+    "ux ui",
+    "diseñador web",
+    "product designer"
     ]
     bot = RecolectorComputrabajo(roles)
-    bot.recolectar(paginas_por_rol=5)
+    bot.recolectar(paginas_por_rol=3)
+
+    fin = time.time()  # ⏱ fin del cronómetro
+    tiempo_total = fin - inicio
+
+    print(f"\nTiempo total de ejecución: {tiempo_total:.2f} segundos")
