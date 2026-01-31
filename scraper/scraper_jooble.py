@@ -1,23 +1,23 @@
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-import json
 import time
 import random
-import os 
+import os
+from datetime import datetime
+import re
+from supabase_helper import guardar_oferta_cruda
 
 # --- CONFIGURACIÓN ---
 PERFILES_A_BUSCAR = [
-    "programador", "desarrollador backend", "desarrollador frontend", 
-    "especialista ciberseguridad", "ingeniero de datos", 
-    "administrador de redes", "devops", "qa tester"
+    "programador"
 ]
 
 def extraer_salario_simple(texto_tarjeta):
     """
     Busca una línea que tenga dinero ($ o USD) dentro del texto de la tarjeta.
     """
-    if not texto_tarjeta: return "No especificado"
+    if not texto_tarjeta: return None
     
     # Dividimos el texto en líneas y revisamos una por una
     lineas = texto_tarjeta.split('\n')
@@ -29,23 +29,41 @@ def extraer_salario_simple(texto_tarjeta):
             # Filtro extra: Que la línea no sea un párrafo gigante (menos de 50 letras)
             if len(l) < 50:
                 return l
-    return "No especificado"
+    return None
+
+def extraer_ubicacion(texto_tarjeta):
+    """Extrae la ubicación del texto de la tarjeta"""
+    if not texto_tarjeta: return "Ecuador"
+    
+    lineas = texto_tarjeta.split('\n')
+    for linea in lineas:
+        l = linea.strip().lower()
+        if "quito" in l: return "Quito"
+        if "guayaquil" in l: return "Guayaquil"
+        if "cuenca" in l: return "Cuenca"
+        if "remoto" in l: return "Remoto"
+        if "híbrido" in l or "hibrido" in l: return "Híbrido"
+    return "Ecuador"
+
+def extraer_empresa(texto_tarjeta):
+    """Intenta extraer el nombre de la empresa del texto"""
+    if not texto_tarjeta: return "Confidencial"
+    
+    lineas = texto_tarjeta.split('\n')
+    # Generalmente la empresa está en las primeras líneas
+    for i, linea in enumerate(lineas[:5]):
+        l = linea.strip()
+        # Si la línea no tiene números y es razonablemente corta, podría ser la empresa
+        if len(l) > 3 and len(l) < 50 and not any(char.isdigit() for char in l):
+            if "$" not in l and "USD" not in l and "hace" not in l.lower():
+                return l
+    return "Confidencial"
 
 def recolector_fuerza_bruta():
     print("INICIANDO RECOLECTOR MASIVO DE DATOS (CON DETECTOR DE SALARIOS)")
     
-    nombre_archivo = "data_cruda_jooble.json"
-    lista_ofertas_acumulada = []
     links_vistos = set()
-    
-    # 1. Cargar memoria previa
-    if os.path.exists(nombre_archivo):
-        try:
-            with open(nombre_archivo, "r", encoding="utf-8") as f:
-                lista_ofertas_acumulada = json.load(f)
-            for o in lista_ofertas_acumulada: links_vistos.add(o.get("link"))
-            print(f"📚 Memoria cargada: {len(links_vistos)} ofertas previas.")
-        except: pass
+    contador_guardados = 0
 
     # 2. Navegador (CONFIGURACIÓN BLINDADA) 🛡️
     options = uc.ChromeOptions()
@@ -102,23 +120,33 @@ def recolector_fuerza_bruta():
                             try: titulo = tarjeta.find_element(By.TAG_NAME, "h2").text
                             except: titulo = "Sin Título"
 
-                            # --- AQUÍ USAMOS LA NUEVA FUNCIÓN ---
+                            # Extraer información adicional
                             salario_encontrado = extraer_salario_simple(texto_crudo)
-                            # ------------------------------------
-
-                            lista_ofertas_acumulada.append({
-                                "link": link,
-                                "titulo": titulo,
-                                "salario": salario_encontrado, # <--- GUARDAMOS EL SALARIO
-                                "raw_text": texto_crudo, 
-                                "fecha_recoleccion": time.strftime("%Y-%m-%d")
-                            })
+                            ubicacion = extraer_ubicacion(texto_crudo)
+                            empresa = extraer_empresa(texto_crudo)
+                            
+                            # Formato estándar requerido
+                            datos = {
+                                "plataforma": "jooble",
+                                "rol_busqueda": perfil if perfil else "",
+                                "fecha_publicacion": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                "oferta_laboral": titulo if titulo else "Sin Título",
+                                "locacion": ubicacion if ubicacion else "Ecuador",
+                                "descripcion": texto_crudo if texto_crudo else "",
+                                "sueldo": salario_encontrado,  # El helper se encargará de limpiarlo
+                                "compania": empresa if empresa else "Confidencial",
+                                "url_publicacion": link if link else ""
+                            }
+                            
+                            # Guardar directamente en Supabase
+                            if guardar_oferta_cruda(datos):
+                                contador_guardados += 1
                             
                             nuevos += 1
                             ofertas_perfil += 1
                     except: pass
                 
-                print(f"   ⬇️ Bajando... (Total BD: {len(lista_ofertas_acumulada)})")
+                print(f"   ⬇️ Bajando... (Total guardados: {contador_guardados})")
                 
                 if nuevos == 0:
                     sin_novedad += 1
@@ -131,17 +159,13 @@ def recolector_fuerza_bruta():
                     if sin_novedad >= 5: break
                 else:
                     sin_novedad = 0
-            
-            # Guardado rápido
-            with open(nombre_archivo, "w", encoding="utf-8") as f:
-                json.dump(lista_ofertas_acumulada, f, indent=4, ensure_ascii=False)
 
     except Exception as e: 
         print(f"❌ Error CRÍTICO durante la ejecución: {e}")
     finally: 
         try: driver.quit()
         except: pass
-        print("🏁 Fin.")
+        print(f"🏁 Fin. Total ofertas guardadas en Supabase: {contador_guardados}")
 
 if __name__ == "__main__":
     recolector_fuerza_bruta()

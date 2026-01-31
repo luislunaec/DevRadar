@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import time
 import random
 import re
-import json
+from supabase_helper import guardar_oferta_cruda
 
 
 class DetectorSueldo:
@@ -105,15 +105,37 @@ def ejecutar():
         "fecha_publicacion": df['date_posted'],
         "oferta_laboral": df['title'],
         "locacion": df['location'],
-        "descripción": descripciones,
+        "descripcion": descripciones,
         "sueldo": sueldos,
         "compania": df['company'],
         "url_publicacion": df['job_url']
     })
 
-    # Guardado con force_ascii=False para respetar los caracteres latinos
-    df_final.to_json("data_completa_sueldos.json", orient="records", indent=4, force_ascii=False)
-    print("✨ Proceso finalizado. El JSON respeta Ñs y tildes.")
+    # Guardar directamente en Supabase
+    exitos = 0
+    errores = 0
+    for _, row in df_final.iterrows():
+        datos = {
+            'plataforma': row.get('plataforma', 'linkedin'),
+            'rol_busqueda': row.get('rol_busqueda', ''),
+            'fecha_publicacion': row.get('fecha_publicacion', ''),
+            'oferta_laboral': row.get('oferta_laboral', 'Sin Título'),
+            'locacion': row.get('locacion', 'Ecuador'),
+            'descripcion': row.get('descripcion', ''),
+            'sueldo': row.get('sueldo'),
+            'compania': row.get('compania', 'Confidencial'),
+            'url_publicacion': row.get('url_publicacion', '')
+        }
+        
+        if guardar_oferta_cruda(datos):
+            exitos += 1
+        else:
+            errores += 1
+        time.sleep(0.05)
+    
+    print(f"✨ Proceso finalizado. {exitos}/{len(df_final)} ofertas guardadas en Supabase (jobs_raw)")
+    if errores > 0:
+        print(f"⚠️ {errores} ofertas no se pudieron guardar")
 
 
 if __name__ == "__main__":

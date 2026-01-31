@@ -1,28 +1,23 @@
 import os
-import pandas as pd
 import google.generativeai as genai
-from supabase import create_client, Client
 from dotenv import load_dotenv
 import json
 import time
-import datetime 
+from supabase_helper import supabase
 
 # --- 1. CONFIGURACIÓN ---
-print("🚀 Iniciando el Rescate de Datos en Supabase...")
+print("🚀 Iniciando generación de embeddings y guardado en Supabase...")
 
 load_dotenv()
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY") 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") # OJO: Asegúrate que en .env sea GOOGLE_API_KEY
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("❌ ERROR: Faltan las claves en el .env")
+if not GOOGLE_API_KEY:
+    print("❌ ERROR: Falta GOOGLE_API_KEY en el .env")
     exit()
 
 try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
     genai.configure(api_key=GOOGLE_API_KEY)
-    print("✅ Conectado a la Nube")
+    print("✅ Conectado a Google AI y Supabase")
 except Exception as e:
     print(f"❌ Error conectando: {e}")
     exit()
@@ -64,81 +59,85 @@ def extraer_skills_ia(texto_para_analizar):
 
 # --- 3. EL PROCESO ---
 
-NOMBRE_ARCHIVO = "TESIS_DATA_LIMPIA_PARA_IA.xlsx" 
-# Si no existe el limpio, intenta con el normal
-if not os.path.exists(NOMBRE_ARCHIVO):
-    NOMBRE_ARCHIVO = "TESIS_DATA_FINAL_V13_IA.xlsx"
-
-if not os.path.exists(NOMBRE_ARCHIVO):
-    print(f"❌ NO ENCUENTRO EL ARCHIVO EXCEL. Revisa el nombre.")
+# Cargar datos limpios de Supabase
+print("📂 Cargando ofertas limpias de Supabase (jobs_clean)...")
+try:
+    response = supabase.table('jobs_clean').select('*').execute()
+    data_limpia = response.data if response.data else []
+    print(f"   ✓ {len(data_limpia)} ofertas limpias cargadas")
+except Exception as e:
+    print(f"   ❌ Error cargando datos: {e}")
     exit()
 
-df = pd.read_excel(NOMBRE_ARCHIVO).fillna("")
-print(f"📂 Procesando archivo: {NOMBRE_ARCHIVO} ({len(df)} registros)")
+if not data_limpia:
+    print("❌ No hay datos limpios para procesar. Ejecuta primero el limpiador.")
+    exit()
 
 exitos = 0
 
-for index, row in df.iterrows():
+for index, item in enumerate(data_limpia):
     try:
-        # 1. Recuperamos datos básicos
-        titulo = str(row.get('titulo', 'Sin Título'))
-        empresa = str(row.get('empresa', 'Confidencial'))
-        link = str(row.get('link', ''))
-        raw_text = str(row.get('raw_text', '')) # Descripción cruda
-        skills_excel = str(row.get('skills', '')) # Skills del Regex (PLAN B)
+        # 1. Recuperamos datos del formato estándar
+        plataforma = str(item.get('plataforma', ''))
+        rol_busqueda = str(item.get('rol_busqueda', ''))
+        fecha_publicacion = str(item.get('fecha_publicacion', ''))
+        oferta_laboral = str(item.get('oferta_laboral', 'Sin Título'))
+        locacion = str(item.get('locacion', 'Ecuador'))
+        descripcion = str(item.get('descripcion', ''))
+        sueldo = str(item.get('sueldo', 'No especificado'))
+        compania = str(item.get('compania', 'Confidencial'))
+        habilidades = str(item.get('habilidades', ''))
+        url_publicacion = str(item.get('url_publicacion', ''))
+        job_clean_id = item.get('id')  # ID de la tabla jobs_clean para la relación
         
-        if not link or link == "nan": continue
+        if not url_publicacion or url_publicacion == "nan": continue
+        if not job_clean_id: continue  # Necesitamos el ID para la relación
 
-        print(f"🔄 {index+1}/{len(df)}: {titulo[:25]}...", end="\r")
+        print(f"🔄 {index+1}/{len(data_limpia)}: {oferta_laboral[:25]}...", end="\r")
 
-        # --- 🧠 LÓGICA DE RESCATE (AQUÍ ESTÁ LA MAGIA) ---
-        
-        # Detectamos si la descripción es basura de Jooble
-        es_basura_jooble = "registrese" in raw_text.lower() or "verificar que usted" in raw_text.lower() or len(raw_text) < 50
-        
-        if es_basura_jooble:
-            # PLAN B: Construimos un texto sintético con Título + Skills del Excel
-            texto_para_ia = f"Puesto: {titulo}. Tecnologías requeridas: {skills_excel}. Empresa: {empresa}."
-            descripcion_final = "Descripción original protegida. " + texto_para_ia
-        else:
-            # PLAN A: Usamos la descripción completa
-            texto_para_ia = f"{titulo}. {raw_text}"
-            descripcion_final = raw_text
+        # 2. Preparar texto para embedding
+        texto_para_ia = f"{oferta_laboral}. {descripcion}"
+        if habilidades:
+            texto_para_ia += f" Habilidades: {habilidades}"
 
-        # 2. Generar Vector (Usando el texto limpio o el sintético)
+        # 3. Generar Vector
         vector = obtener_embedding(texto_para_ia)
+        if not vector:
+            print(f"\n⚠️ No se pudo generar embedding para {url_publicacion[:30]}")
+            continue
         
-        # 3. Extraer Skills (Si es basura Jooble, usamos las del Excel directo)
-        if es_basura_jooble:
-            # Convertimos "JAVA, SQL" -> ["Java", "SQL"]
-            skills_finales = [s.strip() for s in skills_excel.split(',') if s.strip()]
+        # 4. Procesar habilidades (convertir string a lista si es necesario)
+        if habilidades:
+            if isinstance(habilidades, str):
+                # Si viene como "JAVA, SQL, PYTHON"
+                habilidades_lista = [s.strip() for s in habilidades.split(',') if s.strip()]
+            else:
+                habilidades_lista = habilidades if isinstance(habilidades, list) else []
         else:
-            # Si hay descripción real, dejamos que la IA busque más cosas
-            skills_finales = extraer_skills_ia(texto_para_ia)
-            # Si la IA falla, mezclamos con las del Excel
-            if not skills_finales:
-                skills_finales = [s.strip() for s in skills_excel.split(',') if s.strip()]
+            habilidades_lista = []
 
-        # 4. Datos listos
+        # 5. Datos en formato requerido para Supabase (tabla jobs)
         datos = {
-            "titulo": titulo,
-            "empresa": empresa,
-            "ubicacion": str(row.get('ubicacion', 'Ecuador')),
-            "salario": str(row.get('salario', 'No especificado')),
-            "descripcion": descripcion_final, # Guardamos la explicativa
-            "link": link,
-            "fecha_recoleccion": str(datetime.date.today()),
-            "fuente": str(row.get('fuente', 'Web')),
-            "skills": json.dumps(skills_finales),
-            "embedding": vector
+            "plataforma": plataforma,
+            "rol_busqueda": rol_busqueda,
+            "fecha_publicacion": fecha_publicacion,
+            "oferta_laboral": oferta_laboral,
+            "locacion": locacion,
+            "descripcion": descripcion,
+            "sueldo": sueldo,
+            "compania": compania,
+            "habilidades": json.dumps(habilidades_lista) if habilidades_lista else json.dumps([]),
+            "url_publicacion": url_publicacion,
+            "embedding": vector,
+            "job_clean_id": job_clean_id  # Relación con jobs_clean
         }
         
-        # 5. Enviar a Supabase (Con reintento simple)
+        # 6. Enviar a Supabase (Con reintento simple)
         try:
-            supabase.table('jobs').upsert(datos, on_conflict='link').execute()
+            supabase.table('jobs').upsert(datos, on_conflict='url_publicacion').execute()
             exitos += 1
         except Exception as e_db:
-            # Si falla la conexión (como te pasó antes), esperamos y seguimos
+            # Si falla la conexión, esperamos y seguimos
             print(f"\n⚠️ Error de red al subir oferta {index}: {e_db}")
             time.sleep(5) 
         
@@ -149,7 +148,7 @@ for index, row in df.iterrows():
         print("\n🛑 Detenido por el usuario.")
         break
     except Exception as e:
-        print(f"\n❌ Error inesperado fila {index}: {e}")
+        print(f"\n❌ Error inesperado item {index}: {e}")
         continue
 
-print(f"\n\n✨ ¡MISIÓN CUMPLIDA! Se salvaron {exitos} ofertas en la nube.")
+print(f"\n\n✨ ¡MISIÓN CUMPLIDA! Se salvaron {exitos}/{len(data_limpia)} ofertas con embeddings en la nube.")

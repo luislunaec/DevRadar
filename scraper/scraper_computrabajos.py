@@ -5,7 +5,7 @@ import time
 import random
 from datetime import datetime, timedelta
 import re
-import json
+from supabase_helper import guardar_oferta_cruda
 
 class RecolectorComputrabajo:
     """
@@ -126,7 +126,7 @@ class RecolectorComputrabajo:
 
                         # --- AQUÍ ESTÁ EL CAMBIO SOLICITADO ---
                         self.datos.append({
-                            'plataforma': 'computrabajo',     # <-- Campo Nuevo Agregado
+                            'plataforma': 'computrabajo',
                             'rol_busqueda': rol,
                             'fecha_publicacion': fecha_calculada,
                             'oferta_laboral': oferta_laboral,
@@ -151,7 +151,7 @@ class RecolectorComputrabajo:
             self.registros_por_rol[rol] = contador_rol
             print(f"\n✓ Total para '{rol}': {contador_rol} registros")
 
-        self.guardar_json()
+        self.guardar_supabase()
         self.mostrar_resumen()
 
     def parse_detalle(self, url):
@@ -199,7 +199,8 @@ class RecolectorComputrabajo:
         print(f"TOTAL DE REGISTROS (con duplicados): {total}")
         print(f"{'=' * 60}\n")
 
-    def guardar_json(self):
+    def guardar_supabase(self):
+        """Guarda los datos directamente en Supabase tabla jobs_raw"""
         df = pd.DataFrame(self.datos)
 
         print(f"\nRegistros antes de eliminar duplicados: {len(df)}")
@@ -207,133 +208,43 @@ class RecolectorComputrabajo:
             df.drop_duplicates(subset=['url_publicacion'], inplace=True)
         print(f"Registros después de eliminar duplicados: {len(df)}")
 
-        # Convertir a JSON
-        df.to_json("ofertas_crudas.json", orient='records', indent=4, force_ascii=False)
-        print(f"\n✓ Archivo 'ofertas_crudas.json' guardado exitosamente")
+        # Guardar en Supabase
+        exitos = 0
+        errores = 0
+        for _, row in df.iterrows():
+            datos = {
+                'plataforma': row.get('plataforma', 'computrabajo'),
+                'rol_busqueda': row.get('rol_busqueda', ''),
+                'fecha_publicacion': row.get('fecha_publicacion', ''),
+                'oferta_laboral': row.get('oferta_laboral', 'Sin Título'),
+                'locacion': row.get('locacion', 'Ecuador'),
+                'descripcion': row.get('descripcion', ''),
+                'sueldo': row.get('sueldo'),
+                'compania': row.get('compania', 'Confidencial'),
+                'url_publicacion': row.get('url_publicacion', '')
+            }
+            
+            if guardar_oferta_cruda(datos):
+                exitos += 1
+            else:
+                errores += 1
+            time.sleep(0.05)  # Pequeña pausa para no saturar
+        
+        print(f"\n✓ {exitos}/{len(df)} ofertas guardadas en Supabase (jobs_raw)")
+        if errores > 0:
+            print(f"⚠️ {errores} ofertas no se pudieron guardar (ver errores arriba)")
 
+
+# Lista de roles por defecto para usar en el scraper
+ROLES_DEFAULT = [
+    # --- GENERALISTAS Y CLÁSICOS ---
+    "sistemas de información"
+]
 
 if __name__ == "__main__":
     inicio = time.time()
-    # Puedes editar esta lista según tus necesidades
-    roles = [
-    # --- GENERALISTAS Y CLÁSICOS ---
-    "sistemas de información",
-    "ingeniero de sistemas",
-    "ingeniería de software",
-    "tecnologia de la informacion",
-    "informatica",
-    "computacion",
-    "programador",
-    "analista programador",
-    "analista de sistemas",
-    "analista funcional",  # Muy común en banca/seguros
-    "consultor ti",
-
-    # --- DESARROLLO (Niveles y Stacks) ---
-    "desarrollador",
-    "desarrollador web",
-    "desarrollador movil",
-    "mobile developer",
-    "android developer",
-    "ios developer",
-    "backend developer",
-    "frontend developer",
-    "full stack developer",
-    "software engineer",
-    "software architect",
-    "tech lead",
-    "arquitecto de software",
-
-    # --- LENGUAJES Y FRAMEWORKS (Recruiters usan esto como título) ---
-    "java developer",
-    "python developer",
-    "net developer",
-    ".net",
-    "c#",
-    "php developer",
-    "nodejs",
-    "react developer",
-    "angular developer",
-    "vue.js",
-    "flutter",
-    "react native",
-    "wordpress",
-    "laravel",
-    "golang",
-    "ruby on rails",
-
-    # --- INFRAESTRUCTURA Y NUBE ---
-    "devops",
-    "cloud",
-    "administrador de sistemas",
-    "administrador de servidores",
-    "linux",
-    "aws",
-    "azure",
-    "virtualizacion",
-    "vmware",
-
-    # --- REDES Y SOPORTE (Volumen alto de ofertas) ---
-    "administrador de redes",
-    "ingeniero de redes",
-    "soporte tecnico",
-    "soporte ti",
-    "help desk",
-    "mesa de ayuda",
-    "tecnico de campo",
-    "mantenimiento de computadoras",
-    "microinformatica",
-
-    # --- DATOS E IA (Tendencia) ---
-    "data analyst",
-    "analista de datos",
-    "data engineer",
-    "ingeniero de datos",
-    "data scientist",
-    "cientifico de datos",
-    "business intelligence",
-    "inteligencia de negocios",
-    "big data",
-    "machine learning",
-    "inteligencia artificial",
-    "power bi",
-    "administrador de base de datos",
-    "sql server",
-
-    # --- CALIDAD Y SEGURIDAD ---
-    "qa",
-    "qa engineer",
-    "qa automation",
-    "tester",
-    "analista de calidad",
-    "ciberseguridad",
-    "seguridad informatica",
-    "seguridad de la informacion",
-
-    # --- GESTIÓN, AGILE Y PRODUCTO ---
-    "scrum master",
-    "project manager ti",
-    "gerente de proyectos ti",
-    "jefe de sistemas",
-    "gerente de ti",
-    "coordinador de sistemas",
-    "lider tecnico",
-
-    # --- ERP Y CORPORATIVO (Muy fuerte en empresas grandes) ---
-    "consultor oracle",
-    "odoo",
-    "salesforce",
-    "erp",
-    "crm",
-
-    # --- DISEÑO (Vinculado a IT) ---
-    "ux ui",
-    "diseñador web",
-    "product designer"
-    ]
-    
-    bot = RecolectorComputrabajo(roles)
-    bot.recolectar(paginas_por_rol=1) # Puse 1 página para probar rápido, cámbialo a 3 si deseas
+    bot = RecolectorComputrabajo(ROLES_DEFAULT)
+    bot.recolectar(paginas_por_rol=3)
 
     fin = time.time()
     tiempo_total = fin - inicio

@@ -1,7 +1,7 @@
-import json
 import re
 import os
 import pandas as pd
+from supabase_helper import supabase
 
 # =============================================================================
 # 🧠 MAPA TECNOLÓGICO (REGEX SALVAVIDAS)
@@ -103,121 +103,105 @@ def es_oferta_valida(titulo, skills_detectadas):
     return False
 
 # =============================================================================
-# 🚀 EJECUCIÓN FASE 1 (SOLO LIMPIEZA)
+# 🚀 EJECUCIÓN LIMPIEZA Y PROCESAMIENTO DE SCRAPERS
 # =============================================================================
 def ejecutar_limpieza_base():
-    print(f"🧹 INICIANDO FASE 1: LIMPIEZA DE DATOS (SIN IA DE SUELDOS)...")
+    print(f"🧹 INICIANDO LIMPIEZA DE DATOS DE SCRAPERS...")
     
-    data_final = []
-    ids_vistos = set()
-    
-    # 1. CARGAR JOOBLE
-    if os.path.exists("data_cruda_jooble.json"):
-        with open("data_cruda_jooble.json", "r", encoding="utf-8") as f:
-            for item in json.load(f):
-                data_final.append({
-                    "titulo": item.get("titulo", "Sin Título"),
-                    "raw_text": item.get("raw_text", ""),
-                    "link": item.get("link", ""),
-                    "fecha_recoleccion": item.get("fecha_recoleccion"),
-                    "origen": "Jooble",
-                    "salario_detectado": None,
-                    "ubicacion_csv": None,
-                    "empresa_detectada": item.get("empresa", item.get("company", "Confidencial"))
-                })
+    # 1. CARGAR DATOS CRUDOS DE SUPABASE
+    print("📂 Cargando ofertas crudas de Supabase (jobs_raw)...")
+    try:
+        response = supabase.table('jobs_raw').select('*').execute()
+        data_final = response.data if response.data else []
+        print(f"   ✓ {len(data_final)} ofertas crudas cargadas")
+    except Exception as e:
+        print(f"   ❌ Error cargando datos: {e}")
+        return
 
-    # 2. CARGAR CSV (MULTITRABAJOS / SCRAPY)
-    if os.path.exists("ofertas_crudas.csv"):
-        try:
-            df = pd.read_csv("ofertas_crudas.csv", encoding='latin-1', sep=';')
-            if df.shape[1] < 2: df = pd.read_csv("ofertas_crudas.csv", encoding='latin-1', sep=',')
-            
-            for _, row in df.iterrows():
-                titulo = str(row.get("oferta_laboral", "Sin Título")).replace("PostuladoVista", "").strip()
-                desc = str(row.get("descripcion", "")) + " " + str(row.get("detalle", ""))
-                
-                data_final.append({
-                    "titulo": titulo,
-                    "raw_text": desc,
-                    "link": str(row.get("url_publicacion", "")),
-                    "fecha_recoleccion": "2026-01-22",
-                    "origen": "Multitrabajos",
-                    "salario_detectado": limpiar_sueldo_csv(row.get("sueldo", "")),
-                    "ubicacion_csv": str(row.get("lugar", "")),
-                    "empresa_detectada": str(row.get("compania", "Confidencial"))
-                })
-        except: pass
-
-    # 3. CARGAR LINKEDIN
-    archivo_linkedin = "data_cruda_linkedin.json"
-    if os.path.exists(archivo_linkedin):
-        with open(archivo_linkedin, "r", encoding="utf-8") as f:
-            for item in json.load(f):
-                salario = item.get("min_amount") if item.get("min_amount") else None
-                data_final.append({
-                    "titulo": item.get("title", "Sin Título"),
-                    "raw_text": item.get("description", ""),
-                    "link": item.get("job_url", ""),
-                    "fecha_recoleccion": "2026-01-23",
-                    "origen": "LinkedIn",
-                    "salario_detectado": salario,
-                    "ubicacion_csv": item.get("location", "Ecuador"),
-                    "empresa_detectada": item.get("company", "Confidencial")
-                })
-
-    # 4. PROCESAMIENTO Y FILTRADO
+    # 4. PROCESAMIENTO Y EXTRACCIÓN DE HABILIDADES
     resultados = []
-    print(f"🔄 Analizando {len(data_final)} ofertas crudas...")
+    ids_vistos = set()
+    print(f"\n🔄 Analizando {len(data_final)} ofertas y extrayendo habilidades...")
     
     for i, item in enumerate(data_final):
-        link = item.get("link", "")
-        if not link or link in ids_vistos: continue
+        url = item.get("url_publicacion", "")
+        if not url or url in ids_vistos: continue
         
-        titulo = item.get("titulo", "Sin Título")
-        raw_text = item.get("raw_text", "")
-        texto_analisis = f"{titulo} {raw_text}" 
+        titulo = item.get("oferta_laboral", "Sin Título")
+        descripcion = item.get("descripcion", "")
+        texto_analisis = f"{titulo} {descripcion}" 
         
-        # A. EXTACCIÓN DE SKILLS (REGEX)
+        # A. EXTRACCIÓN DE SKILLS (REGEX)
         skills = extraer_skills_regex(texto_analisis)
         
         # B. FILTRO DE VALIDEZ
         if not es_oferta_valida(titulo, skills): continue
 
-        # C. PREPARAR DATOS
-        ubi_final = item.get("ubicacion_csv") if item.get("ubicacion_csv") else detectar_ubicacion(texto_analisis)
-        salario = item.get("salario_detectado")
-        if not salario: salario = "No especificado" # Default si no venía en el CSV
+        # C. PREPARAR DATOS EN FORMATO FINAL
+        sueldo = item.get("sueldo")
+        # En jobs_clean, sueldo es TEXT, así que convertimos todo a string
+        if sueldo is None or pd.isna(sueldo) or (isinstance(sueldo, str) and "No especificado" in str(sueldo)):
+            sueldo = "No especificado"
+        elif isinstance(sueldo, (int, float)):
+            sueldo = str(sueldo)
+        else:
+            sueldo = str(sueldo) if sueldo else "No especificado"
 
         registro = {
-            "fuente": item.get("origen"),
-            "fecha": item.get("fecha_recoleccion"),
-            "titulo": titulo,
-            "salario": salario, # Aquí va solo lo que encontró en el CSV/JSON original
-            "ubicacion": ubi_final,
-            # Guardamos las skills del Regex (VITAL para Jooble bloqueado)
-            "skills": ", ".join(sorted(skills)) if skills else "Sin Detalle Técnico",
-            "empresa": item.get("empresa_detectada", "Confidencial"), 
-            "link": link,
-            "raw_text": raw_text
+            "plataforma": str(item.get("plataforma", "")) if item.get("plataforma") else "",
+            "rol_busqueda": str(item.get("rol_busqueda", "")) if item.get("rol_busqueda") else "",
+            "fecha_publicacion": str(item.get("fecha_publicacion", "")) if item.get("fecha_publicacion") else "",
+            "oferta_laboral": str(titulo) if titulo else "Sin Título",
+            "locacion": str(item.get("locacion", "Ecuador")) if item.get("locacion") else "Ecuador",
+            "descripcion": str(descripcion) if descripcion else "",
+            "sueldo": str(sueldo),
+            "compania": str(item.get("compania", "Confidencial")) if item.get("compania") else "Confidencial",
+            "habilidades": ", ".join(sorted(skills)) if skills else "",
+            "url_publicacion": str(url) if url else ""
         }
-        resultados.append(registro)
-        ids_vistos.add(link)
-
-    # 5. GUARDAR EXCEL LIMPIO
-    if resultados:
-        df = pd.DataFrame(resultados)
-        # Ordenamos las columnas bonito
-        cols = ["fecha", "fuente", "titulo", "salario", "ubicacion", "skills", "empresa", "link", "raw_text"]
-        for c in cols: 
-            if c not in df.columns: df[c] = ""
-        df = df[cols]
         
-        archivo = "DATA_LIMPIA_SIN_SUELDOS.xlsx"
-        df.to_excel(archivo, index=False)
-        print(f"\n✨ ¡FASE 1 COMPLETADA!")
-        print(f"📂 Archivo generado: '{archivo}'")
+        # Validar campos requeridos
+        if not registro["plataforma"] or not registro["oferta_laboral"] or not registro["url_publicacion"]:
+            continue
+        resultados.append(registro)
+        ids_vistos.add(url)
+
+    # 5. GUARDAR EN SUPABASE (jobs_clean)
+    if resultados:
+        print(f"\n💾 Guardando {len(resultados)} ofertas limpias en Supabase (jobs_clean)...")
+        exitos = 0
+        
+        for registro in resultados:
+            try:
+                # Asegurar que todos los campos requeridos estén presentes
+                registro_limpio = {
+                    'plataforma': registro.get('plataforma', ''),
+                    'rol_busqueda': registro.get('rol_busqueda', ''),
+                    'fecha_publicacion': registro.get('fecha_publicacion', ''),
+                    'oferta_laboral': registro.get('oferta_laboral', 'Sin Título'),
+                    'locacion': registro.get('locacion', 'Ecuador'),
+                    'descripcion': registro.get('descripcion', ''),
+                    'sueldo': registro.get('sueldo', 'No especificado'),
+                    'compania': registro.get('compania', 'Confidencial'),
+                    'habilidades': registro.get('habilidades', ''),
+                    'url_publicacion': registro.get('url_publicacion', '')
+                }
+                
+                # Validar campos requeridos
+                if not registro_limpio['plataforma'] or not registro_limpio['oferta_laboral'] or not registro_limpio['url_publicacion']:
+                    continue
+                
+                supabase.table('jobs_clean').upsert(registro_limpio, on_conflict='url_publicacion').execute()
+                exitos += 1
+            except Exception as e:
+                error_msg = str(e)
+                if 'duplicate key' not in error_msg.lower() and 'unique constraint' not in error_msg.lower():
+                    print(f"⚠️ Error guardando oferta {registro.get('url_publicacion', '')[:30]}: {error_msg[:100]}")
+        
+        print(f"\n✨ ¡LIMPIEZA COMPLETADA!")
         print(f"📊 Total ofertas válidas (TI): {len(resultados)}")
-        print("🚀 Listo para la siguiente fase (Embeddings en Nube).")
+        print(f"✅ {exitos}/{len(resultados)} ofertas guardadas en Supabase (jobs_clean)")
+        print("🚀 Listo para generar embeddings.")
     else:
         print("❌ No quedaron registros válidos después del filtro.")
 
