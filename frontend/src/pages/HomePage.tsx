@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, DollarSign, TrendingUp, Sparkles } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { getRolesDisponibles } from '@/services/api';
 
 const features = [
   {
@@ -25,7 +26,12 @@ const features = [
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [roles, setRoles] = useState<string[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getRolesDisponibles().then(setRoles).catch(() => []);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +76,22 @@ export default function HomePage() {
                 Analizar Mercado
               </Button>
             </form>
+            {roles.length > 0 && (
+              <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                <span className="text-sm text-muted-foreground self-center">Roles con datos:</span>
+                {roles.slice(0, 8).map((r) => (
+                  <Button
+                    key={r}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => { setSearchQuery(r); navigate(`/dashboard?rol=${encodeURIComponent(r)}`); }}
+                  >
+                    {r}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>

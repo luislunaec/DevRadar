@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ProgressBar } from '@/components/ProgressBar';
+import { generarReporteIA, type ReporteIA } from '@/services/api';
 
 const suggestedQueries = [
   'Salarios en Quito',
@@ -13,32 +14,28 @@ const suggestedQueries = [
   'Top Frameworks',
 ];
 
-// Mock AI response
-const mockReport = {
-  region: 'Guayaquil',
-  periodo: 'Q1-Q4 2024',
-  actualizado: 'ACTUALIZADO HOY',
-  resumen: [
-    'Incremento del 15% en la demanda de perfiles Fullstack con dominio de ecosistemas Cloud (AWS/Azure).',
-    'El rango salarial promedio para perfiles Senior aumentó a $3,200 - $4,500 netos en el sector bancario de Guayaquil.',
-    'El 65% de las vacantes en la ciudad mantienen un formato híbrido (2 días presenciales).',
-  ],
-  top_herramientas: [
-    { nombre: 'React / Next.js', porcentaje: 88 },
-    { nombre: 'Node.js / Express', porcentaje: 72 },
-    { nombre: 'Python (Data Science)', porcentaje: 64 },
-    { nombre: 'Java (Spring Boot)', porcentaje: 55 },
-  ],
-};
-
 export default function AIReportsPage() {
   const [query, setQuery] = useState('');
-  const [showReport, setShowReport] = useState(true); // Show mock by default for demo
+  const [report, setReport] = useState<ReporteIA | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      setShowReport(true);
+    if (!query.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await generarReporteIA({
+        pregunta: query,
+        region: 'Ecuador',
+        incluir_graficos: true,
+      });
+      setReport(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error generando reporte');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,45 +58,55 @@ export default function AIReportsPage() {
 
         {/* Chat Area */}
         <div className="max-w-4xl mx-auto space-y-6 mb-8">
-          {/* User Message Example */}
-          <div className="flex justify-end">
-            <div className="flex items-start gap-3">
-              <div className="glass-card p-4 bg-primary text-primary-foreground max-w-md">
-                <p className="text-sm">¿Cuáles son las herramientas más usadas en Guayaquil para 2024?</p>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-primary">Tú</span>
+          {query && (
+            <div className="flex justify-end">
+              <div className="flex items-start gap-3">
+                <div className="glass-card p-4 bg-primary text-primary-foreground max-w-md">
+                  <p className="text-sm">{query}</p>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-primary">Tú</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* AI Response */}
-          {showReport && (
+          {error && (
+            <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>
+          )}
+
+          {loading && (
+            <div className="flex gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+                <Sparkles className="h-5 w-5 text-primary-foreground animate-pulse" />
+              </div>
+              <p className="text-sm text-muted-foreground">Generando reporte...</p>
+            </div>
+          )}
+
+          {report && !loading && (
             <div className="flex gap-3">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
                 <Sparkles className="h-5 w-5 text-primary-foreground" />
               </div>
               <div className="flex-1 space-y-4">
                 <p className="text-sm text-muted-foreground">DevRadar AI</p>
-                
                 <div className="glass-card p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-h3">Reporte Dinámico de Mercado</h3>
                       <p className="text-sm text-muted-foreground">
-                        Región: {mockReport.region} • Período: {mockReport.periodo}
+                        Región: {report.region} • Período: {report.periodo}
                       </p>
                     </div>
                     <Badge className="bg-success/20 text-success border-success/30">
-                      {mockReport.actualizado}
+                      {report.actualizado}
                     </Badge>
                   </div>
-
-                  {/* Executive Summary */}
                   <div className="mb-6">
                     <h4 className="text-caption text-error uppercase mb-3">RESUMEN EJECUTIVO</h4>
                     <ul className="space-y-2">
-                      {mockReport.resumen.map((item, i) => (
+                      {(report.resumen_ejecutivo || []).map((item, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
                           <TrendingUp className="h-4 w-4 text-success shrink-0 mt-0.5" />
                           {item}
@@ -107,12 +114,10 @@ export default function AIReportsPage() {
                       ))}
                     </ul>
                   </div>
-
-                  {/* Top Tools */}
                   <div className="mb-6">
                     <h4 className="text-caption text-error uppercase mb-4">TOP HERRAMIENTAS (DEMANDA %)</h4>
                     <div className="space-y-3">
-                      {mockReport.top_herramientas.map((tool) => (
+                      {(report.top_herramientas || []).map((tool) => (
                         <ProgressBar
                           key={tool.nombre}
                           label={tool.nombre}
@@ -123,14 +128,20 @@ export default function AIReportsPage() {
                       ))}
                     </div>
                   </div>
-
-                  {/* Growth Trend Placeholder */}
-                  <div className="mb-4">
-                    <h4 className="text-caption text-error uppercase mb-3">TENDENCIA DE CRECIMIENTO ANUAL</h4>
-                    <div className="h-24 bg-secondary/50 rounded-lg flex items-end justify-end p-4">
-                      <div className="w-32 h-16 bg-primary/30 rounded" />
+                  {report.tendencia_crecimiento && report.tendencia_crecimiento.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-caption text-error uppercase mb-3">TENDENCIA DE CRECIMIENTO ANUAL</h4>
+                      <div className="h-24 bg-secondary/50 rounded-lg flex items-end justify-around gap-1 p-2">
+                        {report.tendencia_crecimiento.map((t, i) => (
+                          <div
+                            key={i}
+                            className="flex-1 bg-primary/30 rounded min-w-[8px]"
+                            style={{ height: `${Math.min(100, (t.valor || 0) % 100)}%` }}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
