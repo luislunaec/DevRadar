@@ -1,0 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* DevRadar Brand Colors */
+    --primary: 217 92% 62%;
+    --primary-400: 217 90% 65%;
+    --primary-700: 217 93% 40%;
+    --primary-foreground: 0 0% 100%;
+    
+    --accent-purple: 263 70% 66%;
+    --accent-teal: 168 76% 40%;
+    
+    /* Semantic States */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 48 96% 47%;
+    --warning-foreground: 0 0% 0%;
+    --error: 0 84% 60%;
+    --error-foreground: 0 0% 100%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+    
+    /* Neutrals & Surfaces - Dark Theme */
+    --background: 220 35% 7%;
+    --foreground: 0 0% 100%;
+    
+    --card: 220 30% 15%;
+    --card-foreground: 0 0% 100%;
+    
+    --popover: 220 30% 15%;
+    --popover-foreground: 0 0% 100%;
+    
+    --secondary: 220 25% 20%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 220 20% 25%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 217 92% 62%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 220 25% 18%;
+    --input: 220 25% 20%;
+    --ring: 217 92% 62%;
+    
+    --radius: 0.75rem;
+    
+    /* Chart colors */
+    --chart-1: 217 92% 62%;
+    --chart-2: 263 70% 66%;
+    --chart-3: 168 76% 40%;
+    --chart-4: 142 71% 45%;
+    --chart-5: 48 96% 47%;
+    
+    /* Sidebar */
+    --sidebar-background: 220 30% 10%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 217 92% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 25% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 25% 18%;
+    --sidebar-ring: 217 92% 62%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 92% 62%) 0%, hsl(263 70% 66%) 100%);
+    --gradient-success: linear-gradient(135deg, hsl(168 76% 40%) 0%, hsl(142 71% 45%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(220 30% 17%) 0%, hsl(220 30% 13%) 100%);
+  }
+
+  .dark {
+    /* Same as root - dark by default */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Manrope', sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Typography scale */
+  .text-display {
+    @apply text-5xl font-extrabold leading-tight tracking-tight;
+  }
+  
+  .text-h1 {
+    @apply text-4xl font-bold leading-tight;
+  }
+  
+  .text-h2 {
+    @apply text-2xl font-bold leading-snug;
+  }
+  
+  .text-h3 {
+    @apply text-lg font-bold leading-normal;
+  }
+  
+  .text-body {
+    @apply text-base font-normal leading-relaxed;
+  }
+  
+  .text-caption {
+    @apply text-xs font-medium leading-normal tracking-wide;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl;
+  }
+  
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+  
+  .glow-primary {
+    box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.5);
+  }
+  
+  .glow-success {
+    box-shadow: 0 0 40px -10px hsl(var(--success) / 0.5);
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { 
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 40px -5px hsl(var(--primary) / 0.6);
+  }
+}
