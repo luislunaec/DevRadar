@@ -12,10 +12,12 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from db.supabase_helper import supabase
 
-# --- CAMBIOS AQUÍ: Librerías de IA ---
-# Importamos ChatGroq en lugar de ChatOpenAI
-from langchain_groq import ChatGroq 
-from langchain_openai import OpenAIEmbeddings # Mantenemos esto para vectores (o usa HuggingFace)
+# --- LLM: Groq ---
+from langchain_groq import ChatGroq
+
+# --- Embeddings: HuggingFace (local, gratuito, sin otra API key) ---
+from langchain_huggingface import HuggingFaceEmbeddings
+
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 
@@ -44,29 +46,30 @@ class JobAnalysis(BaseModel):
     )
 
 # =============================================================================
-# 🤖 CLASE PROCESADORA CON IA (GROQ EDITION)
+# 🤖 CLASE PROCESADORA CON IA (TODO GROQ + HUGGINGFACE)
 # =============================================================================
 class JobAIProcessor:
     def __init__(self):
-        # --- CAMBIOS AQUÍ: Configuración de Groq ---
-        # Usamos Llama 3.3 70B porque es excelente siguiendo formatos JSON
+        # --- LLM: Groq con Llama 3.3 70B ---
         self.llm = ChatGroq(
-            model="llama-3.3-70b-versatile", 
+            model="llama-3.3-70b-versatile",
             temperature=0,
-            # max_tokens=None,
-            # timeout=None,
-            # max_retries=2,
         )
-        
-        # Nota: Groq no tiene embeddings nativos aún. 
-        # Seguimos usando OpenAI para vectores, o puedes cambiar a HuggingFaceEmbeddings()
-        self.embeddings_model = OpenAIEmbeddings(model="text-embedding-3-small")
-        
+
+        # --- Embeddings: HuggingFace sentence-transformers (local, gratuito) ---
+        # all-MiniLM-L6-v2 es el modelo estándar: rápido, ligero (90MB), muy buena calidad.
+        # Se descarga automáticamente la primera vez (~5 seg).
+        # Genera vectores de 384 dimensiones.
+        self.embeddings_model = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            model_kwargs={"device": "cpu"},          # "cuda" si tienes GPU
+            encode_kwargs={"normalize_embeddings": True},  # Normalizar mejora coseno similarity
+        )
+
         # Configuración del parser
         self.parser = PydanticOutputParser(pydantic_object=JobAnalysis)
-        
+
         # El Prompt para el LLM
-        # Nota: Llama 3 a veces es hablador, reforzamos que solo queremos JSON
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", "Eres un experto reclutador IT. Tu tarea es extraer información estructurada en JSON. "
                        "NO incluyas texto introductorio ni explicaciones, solo el JSON raw. "
@@ -79,17 +82,22 @@ class JobAIProcessor:
     def analizar_oferta(self, titulo: str, descripcion: str) -> JobAnalysis:
         """Envía el texto a Groq y retorna un objeto estructurado."""
         try:
-            # Invocamos a la IA
             return self.chain.invoke({"titulo": titulo, "descripcion": descripcion})
         except Exception as e:
             print(f"⚠️ Error analizando oferta '{titulo}' con Groq: {e}")
-            # Retornamos un objeto 'vacío' seguro en caso de error
-            return JobAnalysis(es_oferta_valida_tech=False, skills=[], seniority="", sueldo_normalizado="", ubicacion_tipo="")
+            return JobAnalysis(
+                es_oferta_valida_tech=False,
+                skills=[],
+                seniority="No especificado",
+                sueldo_normalizado="No especificado",
+                ubicacion_tipo="No especificado",
+            )
 
     def generar_embedding(self, texto: str) -> List[float]:
-        """Genera el vector numérico para búsqueda semántica."""
+        """Genera el vector numérico usando HuggingFace (local, sin API externa)."""
         try:
-            texto_limpio = texto.replace("\n", " ")
+            texto_limpio = texto.replace("\n", " ").strip()
+            # embed_query retorna List[float] directamente
             return self.embeddings_model.embed_query(texto_limpio)
         except Exception as e:
             print(f"⚠️ Error generando embedding: {e}")
@@ -99,9 +107,10 @@ class JobAIProcessor:
 # 🚀 EJECUCIÓN PRINCIPAL
 # =============================================================================
 def ejecutar_limpieza_ia():
-    print(f"🤖 INICIANDO PROCESAMIENTO CON IA (GROQ)...")
-    
+    print("🤖 INICIANDO PROCESAMIENTO CON IA (GROQ + HUGGINGFACE EMBEDDINGS)...")
+
     processor = JobAIProcessor()
+    print("✅ Modelos cargados correctamente.")
 
     # 1. CARGAR DATOS CRUDOS
     print("📂 Cargando ofertas crudas de Supabase (jobs_raw)...")
@@ -113,27 +122,33 @@ def ejecutar_limpieza_ia():
         return
 
     print(f"🔄 Procesando {len(data_final)} ofertas...")
-    
+
     resultados = []
     ids_vistos = set()
 
     for i, item in enumerate(data_final):
         url = item.get("url_publicacion", "")
-        if not url or url in ids_vistos: continue
+        if not url or url in ids_vistos:
+            continue
 
         titulo = item.get("oferta_laboral", "Sin Título")
         descripcion = item.get("descripcion", "")
-        
+
         # --- A. ANÁLISIS IA (GROQ) ---
         analisis = processor.analizar_oferta(titulo, descripcion)
 
         # --- B. FILTRO DE VALIDEZ ---
         if not analisis.es_oferta_valida_tech:
+            print(f"   🚫 Filtrada (no es tech): {titulo[:60]}...")
             continue
 
-        # --- C. GENERACIÓN DE EMBEDDING ---
-        texto_a_vectorizar = f"{titulo} {' '.join(analisis.skills)}"
+        # --- C. GENERACIÓN DE EMBEDDING (HUGGINGFACE, LOCAL) ---
+        texto_a_vectorizar = f"{titulo} {descripcion[:500]} {' '.join(analisis.skills)}"
         vector = processor.generar_embedding(texto_a_vectorizar)
+
+        if not vector:
+            print(f"   ⚠️ Skipped por embedding vacío: {titulo[:60]}...")
+            continue
 
         # --- D. PREPARAR REGISTRO ---
         registro = {
@@ -148,31 +163,32 @@ def ejecutar_limpieza_ia():
             "habilidades": ", ".join(analisis.skills),
             "seniority": analisis.seniority,
             "url_publicacion": url,
-            "embedding": vector 
+            "embedding": vector,
         }
 
         resultados.append(registro)
         ids_vistos.add(url)
-        
-        # Rate limiting: Groq tiene límites agresivos en cuentas free
-        # Ajusta este sleep si recibes errores 429 (Too Many Requests)
-        time.sleep(1) 
-        if i % 5 == 0: print(f"   ⏳ Procesados {i+1}...")
+
+        # Rate limiting para Groq (los embeddings son locales, no generan tráfico de API)
+        time.sleep(1)
+        if (i + 1) % 5 == 0:
+            print(f"   ⏳ Procesados {i + 1}/{len(data_final)}...")
 
     # 3. GUARDAR EN SUPABASE
     if resultados:
-        print(f"\n💾 Guardando {len(resultados)} ofertas procesadas por IA en 'jobs_clean'...")
+        print(f"\n💾 Guardando {len(resultados)} ofertas procesadas en 'jobs_clean'...")
         exitos = 0
         for registro in resultados:
             try:
                 supabase.table('jobs_clean').upsert(registro, on_conflict='url_publicacion').execute()
                 exitos += 1
             except Exception as e:
-                print(f"⚠️ Error guardando: {e}")
-        
-        print(f"✅ Éxito: {exitos}/{len(resultados)} guardados.")
+                print(f"⚠️ Error guardando '{registro['oferta_laboral'][:40]}...': {e}")
+
+        print(f"✅ Éxito: {exitos}/{len(resultados)} guardados en jobs_clean.")
     else:
         print("❌ Ninguna oferta pasó el filtro de la IA.")
+
 
 if __name__ == "__main__":
     ejecutar_limpieza_ia()
