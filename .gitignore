@@ -213,6 +213,5 @@ __marimo__/
 
 # Ignorar archivos de datos para no subirlos a la nube
 *.csv
-*.json
 *.xlsx
 __pycache__/
