@@ -2,10 +2,10 @@
 Clase principal para ejecutar el flujo completo de scraping
 """
 import time
-from scraper_computrabajos import RecolectorComputrabajo
-from scraper_linkedin import ejecutar as ejecutar_linkedin
-from scraper_jooble import recolector_fuerza_bruta
-from limpiador_de_datos import ejecutar_limpieza_base
+from scrapers.scraper_computrabajos import RecolectorComputrabajo, ROLES_DEFAULT
+from scrapers.scraper_linkedin import ejecutar as ejecutar_linkedin
+from scrapers.scraper_jooble import recolector_fuerza_bruta
+from limpiador.limpiador_de_datos import ejecutar_limpieza_ia
 
 
 class ScraperMain:
@@ -26,8 +26,6 @@ class ScraperMain:
         # 1. Scraper Computrabajo
         print("\n[1/3] 🟦 Ejecutando scraper de Computrabajo...")
         try:
-            # Usar los roles definidos en scraper_computrabajos.py
-            from scraper_computrabajos import ROLES_DEFAULT
             bot = RecolectorComputrabajo(ROLES_DEFAULT)
             bot.recolectar(paginas_por_rol=3)
             print("✅ Computrabajo completado")
@@ -65,7 +63,7 @@ class ScraperMain:
         print("=" * 70)
         
         try:
-            ejecutar_limpieza_base()
+            ejecutar_limpieza_ia()
             print("\n" + "=" * 70)
             print("✅ FASE 2 COMPLETADA: Datos limpiados con habilidades guardados en jobs_clean")
             print("=" * 70)

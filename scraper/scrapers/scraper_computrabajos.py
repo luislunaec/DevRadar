@@ -1,3 +1,5 @@
+import os
+import sys
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -5,7 +7,13 @@ import time
 import random
 from datetime import datetime, timedelta
 import re
-from supabase_helper import guardar_oferta_cruda
+
+# Permitir imports cuando se ejecuta directamente desde scrapers/
+_scraper_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _scraper_root not in sys.path:
+    sys.path.insert(0, _scraper_root)
+
+from db.supabase_helper import guardar_oferta_cruda
 
 class RecolectorComputrabajo:
     """

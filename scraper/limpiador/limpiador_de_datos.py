@@ -1,9 +1,16 @@
 import os
+import sys
 import time
 from typing import List, Optional
+
+# Permitir imports cuando se ejecuta directamente desde limpiador/
+_scraper_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _scraper_root not in sys.path:
+    sys.path.insert(0, _scraper_root)
+
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from supabase_helper import supabase
+from db.supabase_helper import supabase
 
 # Librerías de IA
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings

@@ -1,9 +1,18 @@
 import os
+import sys
 import google.generativeai as genai
 from dotenv import load_dotenv
 import json
 import time
-from supabase_helper import supabase
+
+# Permitir ejecutar directamente desde db/ o como módulo
+if __name__ == "__main__":
+    _scraper_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _scraper_root not in sys.path:
+        sys.path.insert(0, _scraper_root)
+    from db.supabase_helper import supabase
+else:
+    from .supabase_helper import supabase
 
 # --- 1. CONFIGURACIÓN ---
 print("🚀 Iniciando generación de embeddings y guardado en Supabase...")

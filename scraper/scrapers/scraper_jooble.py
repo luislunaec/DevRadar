@@ -1,12 +1,19 @@
+import os
+import sys
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time
 import random
-import os
 from datetime import datetime
 import re
-from supabase_helper import guardar_oferta_cruda
+
+# Permitir imports cuando se ejecuta directamente desde scrapers/
+_scraper_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _scraper_root not in sys.path:
+    sys.path.insert(0, _scraper_root)
+
+from db.supabase_helper import guardar_oferta_cruda
 
 # --- CONFIGURACIÓN ---
 PERFILES_A_BUSCAR = [
