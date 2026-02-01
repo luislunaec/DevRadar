@@ -17,17 +17,19 @@ from db.supabase_helper import guardar_oferta_cruda
 
 class RecolectorComputrabajo:
     """
-    Scraper mejorado con salida en formato JSON y contador por rol
+    Scraper mejorado con salida en formato JSON y contador por rol.
+    Solo obtiene ofertas recientes según scrape_days (pubdate); no borra jobs_raw, solo append.
     """
 
-    def __init__(self, roles):
+    def __init__(self, roles, scrape_days: int = 7):
         self.base_url = "https://ec.computrabajo.com"
         self.roles = roles
+        self.scrape_days = scrape_days  # días hacia atrás para pubdate
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         self.datos = []
-        self.registros_por_rol = {}  # Nuevo: contador por rol
+        self.registros_por_rol = {}
 
     def parsear_fecha(self, texto_fecha):
         ahora = datetime.now()
@@ -88,7 +90,7 @@ class RecolectorComputrabajo:
             contador_rol = 0  # Contador para este rol específico
 
             for p in range(1, paginas_por_rol + 1):
-                url = f"{self.base_url}/trabajo-de-{slug}?pubdate=30&p={p}"
+                url = f"{self.base_url}/trabajo-de-{slug}?pubdate={self.scrape_days}&p={p}"
                 try:
                     res = requests.get(url, headers=self.headers, timeout=10)
                     if res.status_code != 200: break
@@ -251,7 +253,7 @@ ROLES_DEFAULT = [
 
 if __name__ == "__main__":
     inicio = time.time()
-    bot = RecolectorComputrabajo(ROLES_DEFAULT)
+    bot = RecolectorComputrabajo(ROLES_DEFAULT, scrape_days=7)
     bot.recolectar(paginas_por_rol=3)
 
     fin = time.time()

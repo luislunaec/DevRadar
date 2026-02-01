@@ -1,6 +1,8 @@
 import os
 import sys
 import time
+import re
+from datetime import datetime, timezone
 from typing import List, Optional
 
 # Permitir imports cuando se ejecuta directamente desde limpiador/
@@ -23,6 +25,44 @@ from langchain_core.output_parsers import PydanticOutputParser
 
 # Cargar variables de entorno
 load_dotenv()
+
+
+def extraer_sueldo_numerico(valor: str | int | float | None) -> Optional[float]:
+    """
+    Convierte sueldo en texto o número a un único valor numérico (float).
+    Acepta rangos (ej: "1500 - 2000") y devuelve el primer número o el promedio.
+    Retorna None si no hay valor válido.
+    """
+    if valor is None:
+        return None
+    if isinstance(valor, (int, float)):
+        try:
+            return float(valor) if valor == valor else None  # evita NaN
+        except (TypeError, ValueError):
+            return None
+    texto = str(valor).strip().lower()
+    if not texto or texto in ("no especificado", "nan", "none", ""):
+        return None
+    # Buscar uno o más números (enteros o decimales)
+    numeros = re.findall(r"[\d.,]+", texto)
+    numeros_limpios = []
+    for n in numeros:
+        try:
+            # Formato "1.500" (miles) vs "1500.50" (decimal)
+            s = n.strip()
+            if re.match(r"^\d+\.\d{3}$", s):  # 1.500 -> 1500
+                v = float(s.replace(".", ""))
+            else:
+                s = s.replace(",", ".").replace(" ", "")
+                v = float(s)
+            if 100 <= v < 1e9:  # rango razonable en USD
+                numeros_limpios.append(v)
+        except ValueError:
+            continue
+    if not numeros_limpios:
+        return None
+    return sum(numeros_limpios) / len(numeros_limpios)  # promedio si hay rango
+
 
 # =============================================================================
 # 🧠 MODELO DE DATOS
@@ -112,16 +152,26 @@ def ejecutar_limpieza_ia():
     processor = JobAIProcessor()
     print("✅ Modelos cargados correctamente.")
 
-    # 1. CARGAR DATOS CRUDOS
-    print("📂 Cargando ofertas crudas de Supabase (jobs_raw)...")
+    # 1. CARGAR SOLO REGISTROS NO PROCESADOS (pipeline incremental)
+    print("📂 Cargando ofertas crudas no procesadas de Supabase (jobs_raw donde processed = false)...")
     try:
-        response = supabase.table('jobs_raw').select('*').execute()
+        response = supabase.table('jobs_raw').select('*').eq('processed', False).execute()
         data_final = response.data if response.data else []
     except Exception as e:
-        print(f"❌ Error cargando datos: {e}")
+        # Compatibilidad: si la columna processed no existe, cargar todos
+        try:
+            response = supabase.table('jobs_raw').select('*').execute()
+            data_final = response.data if response.data else []
+        except Exception as e2:
+            print(f"❌ Error cargando datos: {e2}")
+            return
+        print(f"⚠️ Columna 'processed' no encontrada; procesando todos los registros.")
+
+    if not data_final:
+        print("✅ No hay ofertas nuevas por procesar (jobs_raw.processed = false).")
         return
 
-    print(f"🔄 Procesando {len(data_final)} ofertas...")
+    print(f"🔄 Procesando {len(data_final)} ofertas no procesadas...")
 
     resultados = []
     ids_vistos = set()
@@ -150,7 +200,14 @@ def ejecutar_limpieza_ia():
             print(f"   ⚠️ Skipped por embedding vacío: {titulo[:60]}...")
             continue
 
-        # --- D. PREPARAR REGISTRO ---
+        # --- D. PREPARAR REGISTRO (sueldo numérico para jobs_clean) ---
+        texto_sueldo = (
+            analisis.sueldo_normalizado
+            if analisis.sueldo_normalizado != "No especificado"
+            else str(item.get("sueldo", "") or "")
+        )
+        sueldo_num = extraer_sueldo_numerico(texto_sueldo)
+
         registro = {
             "plataforma": item.get("plataforma", ""),
             "rol_busqueda": item.get("rol_busqueda", ""),
@@ -158,7 +215,7 @@ def ejecutar_limpieza_ia():
             "oferta_laboral": titulo,
             "locacion": item.get("locacion", "Ecuador"),
             "descripcion": descripcion,
-            "sueldo": analisis.sueldo_normalizado if analisis.sueldo_normalizado != "No especificado" else str(item.get("sueldo", "")),
+            "sueldo": sueldo_num,
             "compania": item.get("compania", "Confidencial"),
             "habilidades": ", ".join(analisis.skills),
             "seniority": analisis.seniority,
@@ -174,18 +231,32 @@ def ejecutar_limpieza_ia():
         if (i + 1) % 5 == 0:
             print(f"   ⏳ Procesados {i + 1}/{len(data_final)}...")
 
-    # 3. GUARDAR EN SUPABASE
+    # 3. GUARDAR EN SUPABASE (jobs_clean) Y MARCAR jobs_raw COMO PROCESADOS
     if resultados:
         print(f"\n💾 Guardando {len(resultados)} ofertas procesadas en 'jobs_clean'...")
         exitos = 0
+        urls_procesados = []
         for registro in resultados:
             try:
                 supabase.table('jobs_clean').upsert(registro, on_conflict='url_publicacion').execute()
                 exitos += 1
+                urls_procesados.append(registro["url_publicacion"])
             except Exception as e:
                 print(f"⚠️ Error guardando '{registro['oferta_laboral'][:40]}...': {e}")
 
         print(f"✅ Éxito: {exitos}/{len(resultados)} guardados en jobs_clean.")
+
+        # Marcar registros en jobs_raw como procesados (processed = true, processed_at = now())
+        if urls_procesados:
+            try:
+                now_utc = datetime.now(timezone.utc).isoformat()
+                supabase.table('jobs_raw').update({
+                    'processed': True,
+                    'processed_at': now_utc,
+                }).in_('url_publicacion', urls_procesados).execute()
+                print(f"✅ Marcados {len(urls_procesados)} registros en jobs_raw como processed = true.")
+            except Exception as e:
+                print(f"⚠️ No se pudieron marcar como procesados en jobs_raw: {e}")
     else:
         print("❌ Ninguna oferta pasó el filtro de la IA.")
 

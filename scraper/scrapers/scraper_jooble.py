@@ -66,13 +66,32 @@ def extraer_empresa(texto_tarjeta):
                 return l
     return "Confidencial"
 
-def recolector_fuerza_bruta():
+def _jooble_date_param(scrape_days: int) -> str | None:
+    """
+    Mapea SCRAPE_DAYS a parámetro date de Jooble:
+    1 día -> date=8, 3 días -> date=2, 7 días -> date=3; otro valor -> sin date.
+    """
+    if scrape_days <= 1:
+        return "8"
+    if scrape_days <= 3:
+        return "2"
+    if scrape_days <= 7:
+        return "3"
+    return None
+
+
+def recolector_fuerza_bruta(scrape_days: int = 7):
+    """
+    Recolecta ofertas de Jooble. Solo ofertas recientes según scrape_days (mapeado a date).
+    No borra jobs_raw, solo inserta (append).
+    """
+    date_param = _jooble_date_param(scrape_days)
     print("INICIANDO RECOLECTOR MASIVO DE DATOS (CON DETECTOR DE SALARIOS)")
+    print(f"   scrape_days={scrape_days} -> date={date_param or 'sin filtrar'}")
     
     links_vistos = set()
     contador_guardados = 0
 
-    # 2. Navegador (CONFIGURACIÓN BLINDADA) 🛡️
     options = uc.ChromeOptions()
     options.add_argument("--start-maximized")
     options.add_argument("--disable-popup-blocking") 
@@ -86,10 +105,16 @@ def recolector_fuerza_bruta():
         print("💡 INTENTO 2: Abriendo sin forzar versión...")
         driver = uc.Chrome(options=options)
     
+
     try:
         for perfil in PERFILES_A_BUSCAR:
-            print(f"\n🔎 --- BUSCANDO: {perfil.upper()} ---")
-            driver.get(f"https://ec.jooble.org/SearchResult?ukw={perfil.replace(' ', '%20')}&rgns=Quito")
+            label = f"date={date_param}" if date_param else "sin filtro por fecha"
+            print(f"\n🔎 --- BUSCANDO: {perfil.upper()} ({label}) ---")
+            
+            base = "https://ec.jooble.org/SearchResult?"
+            query = f"ukw={perfil.replace(' ', '%20')}&rgns=Quito"
+            url = f"{base}date={date_param}&{query}" if date_param else f"{base}{query}"
+            driver.get(url)
             
             time.sleep(8)
             
