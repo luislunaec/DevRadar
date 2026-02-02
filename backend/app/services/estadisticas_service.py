@@ -1,9 +1,51 @@
-"""
-Estadísticas agregadas desde jobs_clean.
-"""
 from collections import Counter
 from app.database import get_supabase
 from app.utils import parse_habilidades
+from app.services.ai_service import get_embedding 
+
+# Umbral de similitud. 
+SIMILARITY_THRESHOLD = 0.55
+
+def _aplicar_filtro_semantico(query_builder, rol: str | None):
+    """
+    Inyecta filtro vectorial si hay rol, usando HuggingFace embeddings.
+    """
+    if not rol:
+        return query_builder
+
+    # 1. Vectorizamos el rol (ej: "Python Backend") -> 384 floats
+    vector_busqueda = get_embedding(rol)
+
+    if not vector_busqueda:
+        # Si falla el modelo local, retornamos filtro vacío seguro
+        print("Fallo al generar embedding, usando fallback vacio")
+        return query_builder.eq("id", -1)
+
+    sb = get_supabase()
+    
+    # 2. RPC a Supabase (match_jobs_ids)
+    params = {
+        "query_embedding": vector_busqueda,
+        "match_threshold": SIMILARITY_THRESHOLD,
+        "match_count": 1000
+    }
+    
+    # Ejecutamos la función RPC
+    try:
+        rpc_response = sb.rpc("match_jobs_ids", params).execute()
+    except Exception as e:
+        print(f"Error en RPC match_jobs_ids: {e}")
+        return query_builder.eq("id", -1)
+    
+    # 3. Extraer IDs
+    matched_ids = [row['id'] for row in rpc_response.data] if rpc_response.data else []
+
+    if not matched_ids:
+        # Si no hay coincidencias semánticas, devolver 0 resultados
+        return query_builder.eq("id", -1)
+
+    # Filtramos la tabla principal por los IDs encontrados
+    return query_builder.in_("id", matched_ids)
 
 
 def get_estadisticas_mercado(
@@ -11,110 +53,120 @@ def get_estadisticas_mercado(
     fecha_desde: str | None = None,
     fecha_hasta: str | None = None,
 ) -> dict:
-    """Estadísticas generales del mercado (total ofertas, salario promedio, nivel demanda)."""
     sb = get_supabase()
     q = sb.table("jobs_clean").select("id, sueldo, created_at, rol_busqueda")
-    if rol:
-        q = q.ilike("rol_busqueda", f"%{rol}%")
+
+    # Filtro inteligente
+    q = _aplicar_filtro_semantico(q, rol)
+
     if fecha_desde:
         q = q.gte("created_at", fecha_desde)
     if fecha_hasta:
         q = q.lte("created_at", fecha_hasta)
+
     r = q.execute()
     rows = r.data or []
 
     total = len(rows)
     sueldos = []
+
     for x in rows:
         v = x.get("sueldo")
         if v is not None and v != "":
             try:
                 sueldos.append(float(v))
             except (TypeError, ValueError):
-                pass
+                continue
 
-    salario_promedio = sum(sueldos) / len(sueldos) if sueldos else 0.0
+    salario_promedio = (sum(sueldos) / len(sueldos)) if sueldos else 0.0
 
-    # Variación: sin histórico usamos 0; luego se puede calcular con fecha
-    ofertas_variacion = 0.0
-    salario_variacion = 0.0
-    nuevas_vacantes = 0.0
-
-    if total < 100:
+    if total < 20:
         nivel_demanda = "bajo"
-    elif total < 500:
+    elif total < 100:
         nivel_demanda = "medio"
     else:
         nivel_demanda = "alto"
 
     return {
         "total_ofertas": total,
-        "ofertas_variacion_porcentaje": ofertas_variacion,
+        "ofertas_variacion_porcentaje": 0.0, 
         "salario_promedio": round(salario_promedio, 2),
-        "salario_variacion_porcentaje": salario_variacion,
+        "salario_variacion_porcentaje": 0.0,
         "nivel_demanda": nivel_demanda,
-        "nuevas_vacantes_porcentaje": nuevas_vacantes,
+        "nuevas_vacantes_porcentaje": 0.0,
     }
 
 
 def get_tecnologias_demandadas(limit: int = 10, rol: str | None = None) -> list[dict]:
-    """Top tecnologías/habilidades más demandadas (desde columna habilidades)."""
     sb = get_supabase()
     q = sb.table("jobs_clean").select("habilidades, rol_busqueda")
-    if rol:
-        q = q.ilike("rol_busqueda", f"%{rol}%")
+    
+    q = _aplicar_filtro_semantico(q, rol)
+    
     r = q.execute()
     rows = r.data or []
 
     counter: Counter = Counter()
-    for row in rows:
-        habs = parse_habilidades(row.get("habilidades"))
-        for h in habs:
-            if h:
-                counter[h.strip()] += 1
+    total_validas = 0
 
-    total_ofertas = len(rows)
+    for row in rows:
+        raw_habs = row.get("habilidades") 
+        habs = parse_habilidades(raw_habs)
+        
+        if habs:
+            total_validas += 1
+            for h in habs:
+                if h:
+                    counter[h.strip().upper()] += 1
+
     out = []
+    base_calc = total_validas if total_validas > 0 else 1
+
     for nombre, count in counter.most_common(limit):
-        pct = (count / total_ofertas * 100) if total_ofertas else 0
-        out.append({"nombre": nombre, "porcentaje": round(pct, 1), "total_ofertas": count})
+        pct = (count / base_calc * 100)
+        out.append({
+            "nombre": nombre,
+            "porcentaje": round(pct, 1),
+            "total_ofertas": count
+        })
     return out
 
 
 def get_distribucion_seniority(rol: str | None = None) -> dict:
-    """Distribución por nivel de experiencia. Si jobs_clean tiene columna seniority se usa; si no, estimación."""
     sb = get_supabase()
-    q = sb.table("jobs_clean").select("*")
-    if rol:
-        q = q.ilike("rol_busqueda", f"%{rol}%")
-    try:
-        r = q.execute()
-    except Exception:
-        r = type("R", (), {"data": []})()
-
+    q = sb.table("jobs_clean").select("seniority, rol_busqueda")
+    
+    q = _aplicar_filtro_semantico(q, rol)
+    
+    r = q.execute()
     rows = r.data or []
-    # Filtrar por rol en cliente si no se aplicó en query (por si acaso)
-    if rol and rows:
-        rows = [x for x in rows if rol.lower() in (x.get("rol_busqueda") or "").lower()]
-    senior = semi_senior = junior = 0
+
+    senior = 0
+    semi_senior = 0
+    junior = 0
+    total = 0
+
     for row in rows:
-        s = (row.get("seniority") or "").lower().strip()
+        s = (row.get("seniority") or "").lower()
+        
+        if not s or s == "no especificado":
+            continue
+            
+        total += 1
         if "senior" in s and "semi" not in s:
             senior += 1
-        elif "semi" in s or "mid" in s:
+        elif "semi" in s:
             semi_senior += 1
         elif "junior" in s or "trainee" in s:
             junior += 1
         else:
-            # Por defecto repartir en partes iguales si no hay seniority
-            senior += 1
+            semi_senior += 1
 
-    total = senior + semi_senior + junior
     if total == 0:
-        senior, semi_senior, junior = 33, 34, 33
-    else:
-        senior = int(senior / total * 100)
-        semi_senior = int(semi_senior / total * 100)
-        junior = 100 - senior - semi_senior
+        return {"senior": 0, "semi_senior": 0, "junior": 0}
 
-    return {"senior": senior, "semi_senior": semi_senior, "junior": junior}
+    return {
+        "senior": int(senior / total * 100),
+        "semi_senior": int(semi_senior / total * 100),
+        "junior": int(junior / total * 100)
+    }
