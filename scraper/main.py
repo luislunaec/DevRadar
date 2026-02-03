@@ -1,108 +1,97 @@
-"""
-Clase principal para ejecutar el flujo completo de scraping.
-Solo se obtienen ofertas recientes según SCRAPE_DAYS; scrapers hacen append en jobs_raw.
-"""
 import os
 import time
 from dotenv import load_dotenv
-from scrapers.scraper_computrabajos import RecolectorComputrabajo, ROLES_DEFAULT
+
+# Importamos las Clases/Funciones
+from scrapers.scraper_computrabajos import RecolectorComputrabajo
 from scrapers.scraper_linkedin import ejecutar as ejecutar_linkedin
-from scrapers.scraper_jooble import recolector_fuerza_bruta
+from scrapers.scraper_jooble import RecolectorJooble 
 from limpiador.limpiador_de_datos import ejecutar_limpieza_ia
 
 load_dotenv()
-# Cuántos días hacia atrás obtener ofertas (configurable por código o .env)
-SCRAPE_DAYS = int(os.getenv("SCRAPE_DAYS", "7"))
+# Por defecto 30 días si no hay nada en el .env
+SCRAPE_DAYS = int(os.getenv("SCRAPE_DAYS", "30"))
 
+# =============================================================================
+# 📜 LA LISTA MAESTRA (AQUÍ MANDAS TÚ)
+# =============================================================================
+ROLES_GLOBALES = [
+    # --- DESARROLLO ---
+    "programador", "desarrollador software", "desarrollador fullstack", 
+    "desarrollador backend", "desarrollador frontend", "desarrollador movil",
+    "ingeniero de sistemas", "sistemas de informacion",
+    
+    # --- LENGUAJES ---
+    "python developer", "java developer", "javascript developer", 
+    ".net developer", "php developer", "c# developer", 
+    
+    # --- DATA & INFRA ---
+    "data analyst", "data engineer", "sql developer", "business intelligence",
+    "devops engineer", "cloud engineer", "aws engineer", "administrador linux",
+    
+    # --- QA & SEGURIDAD ---
+    "qa automation", "qa engineer", "tester de software",
+    "ciberseguridad", "seguridad informatica"
+]
 
 class ScraperMain:
-    """Clase principal que orquesta el flujo completo de scraping"""
-
     def __init__(self, scrape_days: int | None = None):
+        # Si le pasas días los usa, si no, usa el global (30)
         self.scrape_days = scrape_days if scrape_days is not None else SCRAPE_DAYS
+        self.roles = ROLES_GLOBALES # <--- Aquí guardamos la lista maestra
+        
         self.inicio_total = time.time()
         print("=" * 70)
-        print("🚀 INICIANDO FLUJO COMPLETO DE SCRAPING")
-        print("=" * 70)
-        print(f"📅 SCRAPE_DAYS = {self.scrape_days} (solo ofertas de los últimos {self.scrape_days} días)")
+        print(f"🚀 INICIANDO SCRAPING (Días: {self.scrape_days})")
+        print(f"📋 Buscando {len(self.roles)} perfiles en todas las plataformas")
         print("=" * 70)
 
     def ejecutar_scrapers(self):
-        """Ejecuta los 3 scrapers en secuencia (solo ofertas recientes; append en jobs_raw)"""
-        print("\n" + "=" * 70)
-        print("📡 FASE 1: EJECUTANDO SCRAPERS")
-        print("=" * 70)
+        print("\n📡 FASE 1: EJECUTANDO SCRAPERS")
 
-        # 1. Scraper Computrabajo
-        print("\n[1/3] 🟦 Ejecutando scraper de Computrabajo...")
+        # 1. COMPUTRABAJO
+        print("\n[1/3] 🟦 Computrabajo...")
         try:
-            bot = RecolectorComputrabajo(ROLES_DEFAULT, scrape_days=self.scrape_days)
+            # LE PASAMOS LA LISTA MAESTRA (self.roles)
+            bot = RecolectorComputrabajo(self.roles, scrape_days=self.scrape_days)
             bot.recolectar(paginas_por_rol=3)
-            print("✅ Computrabajo completado")
         except Exception as e:
-            print(f"❌ Error en Computrabajo: {e}")
+            print(f"❌ Error Computrabajo: {e}")
 
-        time.sleep(2)  # Pausa entre scrapers
+        time.sleep(2)
 
-        # 2. Scraper LinkedIn
-        print("\n[2/3] 🔵 Ejecutando scraper de LinkedIn...")
+        # 2. JOOBLE
+        print("\n[2/3] 🟢 Jooble...")
         try:
-            ejecutar_linkedin(scrape_days=self.scrape_days)
-            print("✅ LinkedIn completado")
+            # LE PASAMOS LA LISTA MAESTRA (self.roles)
+            bot_jooble = RecolectorJooble(self.roles, scrape_days=self.scrape_days)
+            bot_jooble.recolectar()
         except Exception as e:
-            print(f"❌ Error en LinkedIn: {e}")
+            print(f"❌ Error Jooble: {e}")
 
-        time.sleep(2)  # Pausa entre scrapers
+        time.sleep(2)
 
-        # 3. Scraper Jooble
-        print("\n[3/3] 🟢 Ejecutando scraper de Jooble...")
+        # 3. LINKEDIN
+        print("\n[3/3] 🔵 LinkedIn...")
         try:
-            recolector_fuerza_bruta(scrape_days=self.scrape_days)
-            print("✅ Jooble completado")
+            # LE PASAMOS LA LISTA MAESTRA (self.roles)
+            ejecutar_linkedin(self.roles, scrape_days=self.scrape_days)
         except Exception as e:
-            print(f"❌ Error en Jooble: {e}")
-        
-        print("\n" + "=" * 70)
-        print("✅ FASE 1 COMPLETADA: Todos los scrapers ejecutados")
-        print("=" * 70)
-    
-    def ejecutar_limpiador(self):
-        """Ejecuta el limpiador de datos que añade habilidades"""
-        print("\n" + "=" * 70)
-        print("🧹 FASE 2: LIMPIEZA DE DATOS Y EXTRACCIÓN DE HABILIDADES")
-        print("=" * 70)
-        
-        try:
-            ejecutar_limpieza_ia()
-            print("\n" + "=" * 70)
-            print("✅ FASE 2 COMPLETADA: Datos limpiados con habilidades guardados en jobs_clean")
-            print("=" * 70)
-        except Exception as e:
-            print(f"❌ Error en limpiador: {e}")
-    
+            print(f"❌ Error LinkedIn: {e}")
+
     def ejecutar_flujo_completo(self):
-        """Ejecuta el flujo completo"""
         try:
-            # Fase 1: Scrapers
             self.ejecutar_scrapers()
+            print("\n🧹 FASE 2: LIMPIEZA IA...")
+            try: ejecutar_limpieza_ia()
+            except: pass
             
-            # Fase 2: Limpiador (añade habilidades)
-            self.ejecutar_limpiador()
-            
-            # Resumen final
-            tiempo_total = time.time() - self.inicio_total
-            print("\n" + "=" * 70)
-            print("🎉 FLUJO COMPLETO FINALIZADO")
-            print("=" * 70)
-            print(f"⏱️  Tiempo total: {tiempo_total:.2f} segundos ({tiempo_total/60:.2f} minutos)")
-            print("=" * 70)
-            
+            total = (time.time() - self.inicio_total) / 60
+            print(f"\n🎉 TODO TERMINADO EN {total:.2f} MINUTOS")
         except KeyboardInterrupt:
-            print("\n\n🛑 Proceso interrumpido por el usuario")
-        except Exception as e:
-            print(f"\n\n❌ Error crítico: {e}")
-
+            print("\n🛑 Cancelado por usuario")
 
 if __name__ == "__main__":
-    main = ScraperMain()  # usa SCRAPE_DAYS por defecto; o: ScraperMain(scrape_days=3)
-    main.ejecutar_flujo_completo()
+    # Aquí puedes forzar los días que quieras
+    app = ScraperMain(scrape_days=30)
+    app.ejecutar_flujo_completo()

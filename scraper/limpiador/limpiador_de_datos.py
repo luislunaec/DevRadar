@@ -110,10 +110,17 @@ class JobAIProcessor:
         self.parser = PydanticOutputParser(pydantic_object=JobAnalysis)
 
         # El Prompt para el LLM
+# --- EL PROMPT MAESTRO (ACTUALIZADO CON REGLAS DE DINERO) ---
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "Eres un experto reclutador IT. Tu tarea es extraer información estructurada en JSON. "
-                       "NO incluyas texto introductorio ni explicaciones, solo el JSON raw. "
-                       "Ignora ofertas que no sean del rubro tecnológico. \n{format_instructions}"),
+            ("system", 
+             "Eres un experto reclutador IT. Tu tarea es extraer información estructurada en JSON. "
+             "INSTRUCCIONES CRÍTICAS PARA EL SUELDO:\n"
+             "1. Si encuentras un salario ANUAL (ej: $60k/year), DIVÍDELO para 12.\n"
+             "2. Si es por HORA (ej: $20/hr), MULTIPLÍCALO por 160.\n"
+             "3. Si hay un rango ($1000 - $2000), calcula el PROMEDIO (1500).\n"
+             "4. Tu objetivo es devolver siempre el estimado MENSUAL en USD.\n"
+             "NO incluyas texto introductorio ni explicaciones, solo el JSON raw. "
+             "Ignora ofertas que no sean del rubro tecnológico. \n{format_instructions}"),
             ("human", "Analiza la siguiente oferta:\nTITULO: {titulo}\nDESCRIPCIÓN: {descripcion}")
         ]).partial(format_instructions=self.parser.get_format_instructions())
 

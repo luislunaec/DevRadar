@@ -79,28 +79,29 @@ def extraer_detalles_completos(url):
         return resultado
 
 
-def ejecutar(scrape_days: int = 7):
-    """
-    Ejecuta el scraper de LinkedIn. Solo ofertas recientes según scrape_days.
-    hours_old = scrape_days * 24. No borra jobs_raw, solo inserta (append).
-    """
+# Modifica la definición para que acepte 'roles'
+def ejecutar(roles, scrape_days: int = 30): 
+    
     hours_old = scrape_days * 24
-    print("🚀 INICIANDO SCRAPER...")
-    print(f"   hours_old = {hours_old} (últimos {scrape_days} días)")
+    print("🚀 INICIANDO SCRAPER LINKEDIN...")
+    print(f"   Config: {scrape_days} días | {len(roles)} roles a buscar")
 
-    busquedas = ["Desarrollador Software", "Fullstack Developer", "Backend Developer", "Frontend Developer",
-                 "Product Owner"]
+    # --- BORRA LA LISTA 'busquedas = [...]' QUE TENÍAS AQUÍ ---
+    # YA NO LA NECESITAS PORQUE VIENE DESDE EL MAIN
+    
     df_lista = []
 
-    for t in busquedas:
+    # Usamos la variable 'roles' que nos pasó el Main
+    for t in roles: 
         print(f"Buscando: {t}...")
-        jobs = scrape_jobs(
-            site_name=["linkedin"],
-            search_term=t,
-            location="Ecuador",
-            results_wanted=5,
-            hours_old=hours_old,
-        )
+        try:
+            jobs = scrape_jobs(
+                site_name=["linkedin"],
+                search_term=t,
+                location="Ecuador",
+                results_wanted=5,
+                hours_old=hours_old, 
+            )
         jobs['rol_busqueda'] = t
         jobs['plataforma'] = "linkedin"
         df_lista.append(jobs)

@@ -1,203 +1,197 @@
 import os
 import sys
-import undetected_chromedriver as uc
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 import time
-import random
-from datetime import datetime
+import pandas as pd
+from datetime import datetime, timedelta
 import re
 
-# Permitir imports cuando se ejecuta directamente desde scrapers/
+# --- IMPORTS DE SELENIUM ---
+import undetected_chromedriver as uc
+from selenium.webdriver.common.by import By
+
+# Permitir imports desde root
 _scraper_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _scraper_root not in sys.path:
     sys.path.insert(0, _scraper_root)
 
 from db.supabase_helper import guardar_oferta_cruda
 
-# --- CONFIGURACIÓN ---
-PERFILES_A_BUSCAR = [
-    "programador"
+# Esta lista se usa si lo ejecutas manual, pero el main.py le pasará la suya
+ROLES_A_BUSCAR = [
+    "programador", "desarrollador software", "python developer", 
+    "java developer", "data analyst", "qa automation"
 ]
 
-def extraer_salario_simple(texto_tarjeta):
+class RecolectorJooble:
     """
-    Busca una línea que tenga dinero ($ o USD) dentro del texto de la tarjeta.
+    Scraper de Jooble estandarizado (Clase).
+    Misma lógica blindada de Selenium, pero estructura compatible con Main.
     """
-    if not texto_tarjeta: return None
-    
-    # Dividimos el texto en líneas y revisamos una por una
-    lineas = texto_tarjeta.split('\n')
-    for linea in lineas:
-        # Limpiamos espacios
-        l = linea.strip()
-        # Si tiene signo de dólar O dice USD, Y ADEMÁS tiene algún número...
-        if ("$" in l or "USD" in l) and any(char.isdigit() for char in l):
-            # Filtro extra: Que la línea no sea un párrafo gigante (menos de 50 letras)
-            if len(l) < 50:
-                return l
-    return None
 
-def extraer_ubicacion(texto_tarjeta):
-    """Extrae la ubicación del texto de la tarjeta"""
-    if not texto_tarjeta: return "Ecuador"
-    
-    lineas = texto_tarjeta.split('\n')
-    for linea in lineas:
-        l = linea.strip().lower()
+    def __init__(self, roles, scrape_days: int = 3):
+        self.base_url = "https://ec.jooble.org"
+        self.roles = roles
+        self.scrape_days = scrape_days
+        self.datos = []
+        self.registros_por_rol = {}
+        
+        # Configuración Chrome
+        self.options = uc.ChromeOptions()
+        self.options.add_argument("--start-maximized")
+        self.options.add_argument("--disable-popup-blocking")
+        self.options.add_argument("--no-sandbox")
+
+    def _jooble_date_param(self) -> str | None:
+        """
+        Mapea los días a los parámetros de URL de Jooble.
+        Para 30 días, devolvemos None para que traiga todo lo reciente.
+        """
+        if self.scrape_days <= 1: return "8"
+        if self.scrape_days <= 3: return "2"
+        if self.scrape_days <= 7: return "3"
+        return None
+
+    def extraer_sueldo_numerico(self, texto_tarjeta):
+        if not texto_tarjeta: return None
+        lineas = texto_tarjeta.split('\n')
+        for linea in lineas:
+            l = linea.strip()
+            if ("$" in l or "USD" in l) and any(char.isdigit() for char in l):
+                if len(l) < 50: return l
+        return None
+
+    def extraer_ubicacion(self, texto_tarjeta):
+        if not texto_tarjeta: return "Ecuador"
+        l = texto_tarjeta.lower()
         if "quito" in l: return "Quito"
         if "guayaquil" in l: return "Guayaquil"
         if "cuenca" in l: return "Cuenca"
         if "remoto" in l: return "Remoto"
-        if "híbrido" in l or "hibrido" in l: return "Híbrido"
-    return "Ecuador"
+        return "Ecuador"
 
-def extraer_empresa(texto_tarjeta):
-    """Intenta extraer el nombre de la empresa del texto"""
-    if not texto_tarjeta: return "Confidencial"
-    
-    lineas = texto_tarjeta.split('\n')
-    # Generalmente la empresa está en las primeras líneas
-    for i, linea in enumerate(lineas[:5]):
-        l = linea.strip()
-        # Si la línea no tiene números y es razonablemente corta, podría ser la empresa
-        if len(l) > 3 and len(l) < 50 and not any(char.isdigit() for char in l):
-            if "$" not in l and "USD" not in l and "hace" not in l.lower():
-                return l
-    return "Confidencial"
+    def recolectar(self):
+        print(f"🚀 INICIANDO RECOLECTOR JOOBLE (CLASE BLINDADA)")
+        date_param = self._jooble_date_param()
+        
+        # Fix versión 144
+        try:
+            driver = uc.Chrome(options=self.options, version_main=144)
+        except:
+            print("⚠️ Versión 144 falló, intentando automático...")
+            driver = uc.Chrome(options=self.options)
 
-def _jooble_date_param(scrape_days: int) -> str | None:
-    """
-    Mapea SCRAPE_DAYS a parámetro date de Jooble:
-    1 día -> date=8, 3 días -> date=2, 7 días -> date=3; otro valor -> sin date.
-    """
-    if scrape_days <= 1:
-        return "8"
-    if scrape_days <= 3:
-        return "2"
-    if scrape_days <= 7:
-        return "3"
-    return None
-
-
-def recolector_fuerza_bruta(scrape_days: int = 7):
-    """
-    Recolecta ofertas de Jooble. Solo ofertas recientes según scrape_days (mapeado a date).
-    No borra jobs_raw, solo inserta (append).
-    """
-    date_param = _jooble_date_param(scrape_days)
-    print("INICIANDO RECOLECTOR MASIVO DE DATOS (CON DETECTOR DE SALARIOS)")
-    print(f"   scrape_days={scrape_days} -> date={date_param or 'sin filtrar'}")
-    
-    links_vistos = set()
-    contador_guardados = 0
-
-    options = uc.ChromeOptions()
-    options.add_argument("--start-maximized")
-    options.add_argument("--disable-popup-blocking") 
-    options.add_argument("--no-sandbox") 
-    options.add_argument("--disable-dev-shm-usage") 
-    
-    try:
-        driver = uc.Chrome(options=options, version_main=143)
-    except Exception as e:
-        print(f"⚠️ Error al abrir Chrome: {e}")
-        print("💡 INTENTO 2: Abriendo sin forzar versión...")
-        driver = uc.Chrome(options=options)
-    
-
-    try:
-        for perfil in PERFILES_A_BUSCAR:
-            label = f"date={date_param}" if date_param else "sin filtro por fecha"
-            print(f"\n🔎 --- BUSCANDO: {perfil.upper()} ({label}) ---")
-            
-            base = "https://ec.jooble.org/SearchResult?"
-            query = f"ukw={perfil.replace(' ', '%20')}&rgns=Quito"
-            url = f"{base}date={date_param}&{query}" if date_param else f"{base}{query}"
-            driver.get(url)
-            
-            time.sleep(8)
-            
-            ofertas_perfil = 0
-            sin_novedad = 0
-            
-            # SCROLL INFINITO HASTA 200
-            while ofertas_perfil < 200:
-                # Scroll suave
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(2) 
+        try:
+            for rol in self.roles:
+                print(f"\n🔎 --- BUSCANDO: {rol.upper()} ---")
                 
-                try: driver.find_element(By.TAG_NAME, "body").send_keys(Keys.END)
-                except: pass
-                time.sleep(random.uniform(2, 4))
+                base = "https://ec.jooble.org/SearchResult?"
+                query = f"ukw={rol.replace(' ', '%20')}&rgns=Quito"
+                url = f"{base}date={date_param}&{query}" if date_param else f"{base}{query}"
                 
-                # Buscamos tarjetas
-                tarjetas = driver.find_elements(By.CSS_SELECTOR, "div[data-test-name='_jobCard']")
-                if not tarjetas: tarjetas = driver.find_elements(By.TAG_NAME, "article")
+                driver.get(url)
+                time.sleep(4)
                 
-                nuevos = 0
-                for tarjeta in tarjetas:
-                    try:
-                        # Sacamos el link
+                contador_rol = 0
+                intentos_sin_nuevos = 0
+                links_vistos = set()
+                
+                # Bucle de scroll limitado
+                while contador_rol < 50:
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    time.sleep(2)
+                    
+                    tarjetas = driver.find_elements(By.CSS_SELECTOR, "article")
+                    if not tarjetas: tarjetas = driver.find_elements(By.CSS_SELECTOR, "div[data-test-name='_jobCard']")
+                    if not tarjetas: tarjetas = driver.find_elements(By.CSS_SELECTOR, "div[class*='JobCard']")
+
+                    nuevos_ciclo = 0
+                    
+                    for tarjeta in tarjetas:
                         try:
-                            link = tarjeta.find_element(By.TAG_NAME, "a").get_attribute("href")
-                        except: continue
-                        
-                        if link and link not in links_vistos:
+                            # 1. LINK
+                            try:
+                                elem_link = tarjeta.find_element(By.TAG_NAME, "a")
+                                link = elem_link.get_attribute("href")
+                            except: continue
+
+                            if not link or link in links_vistos: continue
                             links_vistos.add(link)
-                            
-                            # ESTRATEGIA: GUARDAR TODO LO QUE SE VE
-                            texto_crudo = tarjeta.text 
-                            
+
+                            # 2. TÍTULO (Lógica H2 -> H1 -> Link)
+                            titulo = "Sin Título"
                             try: titulo = tarjeta.find_element(By.TAG_NAME, "h2").text
-                            except: titulo = "Sin Título"
+                            except: pass
+                            
+                            if not titulo or titulo == "Sin Título":
+                                try: titulo = tarjeta.find_element(By.TAG_NAME, "h1").text
+                                except: pass
+                            
+                            if not titulo or titulo == "Sin Título":
+                                try: titulo = elem_link.text
+                                except: pass
 
-                            # Extraer información adicional
-                            salario_encontrado = extraer_salario_simple(texto_crudo)
-                            ubicacion = extraer_ubicacion(texto_crudo)
-                            empresa = extraer_empresa(texto_crudo)
-                            
-                            # Formato estándar requerido
-                            datos = {
-                                "plataforma": "jooble",
-                                "rol_busqueda": perfil if perfil else "",
-                                "fecha_publicacion": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                                "oferta_laboral": titulo if titulo else "Sin Título",
-                                "locacion": ubicacion if ubicacion else "Ecuador",
-                                "descripcion": texto_crudo if texto_crudo else "",
-                                "sueldo": salario_encontrado,  # El helper se encargará de limpiarlo
-                                "compania": empresa if empresa else "Confidencial",
-                                "url_publicacion": link if link else ""
-                            }
-                            
-                            # Guardar directamente en Supabase
-                            if guardar_oferta_cruda(datos):
-                                contador_guardados += 1
-                            
-                            nuevos += 1
-                            ofertas_perfil += 1
-                    except: pass
-                
-                print(f"   ⬇️ Bajando... (Total guardados: {contador_guardados})")
-                
-                if nuevos == 0:
-                    sin_novedad += 1
-                    if sin_novedad >= 3:
-                        try:
-                            botones = driver.find_elements(By.TAG_NAME, "button")
-                            for b in botones: 
-                                if "más" in b.text.lower(): b.click(); time.sleep(2); break
-                        except: pass
-                    if sin_novedad >= 5: break
-                else:
-                    sin_novedad = 0
+                            titulo = titulo.replace("\n", " ").strip() if titulo else "Sin Título"
 
-    except Exception as e: 
-        print(f"❌ Error CRÍTICO durante la ejecución: {e}")
-    finally: 
-        try: driver.quit()
-        except: pass
-        print(f"🏁 Fin. Total ofertas guardadas en Supabase: {contador_guardados}")
+                            # 3. TEXTO (InnerText)
+                            texto_full = tarjeta.get_attribute("innerText")
+                            if not texto_full or len(texto_full) < 10:
+                                texto_full = tarjeta.text
+
+                            # Extracciones
+                            sueldo_detectado = self.extraer_sueldo_numerico(texto_full)
+                            locacion_detectada = self.extraer_ubicacion(texto_full)
+                            
+                            # Guardamos en lista interna
+                            self.datos.append({
+                                'plataforma': 'jooble',
+                                'rol_busqueda': rol,
+                                'fecha_publicacion': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                'oferta_laboral': titulo,
+                                'locacion': locacion_detectada,
+                                'descripcion': texto_full,
+                                'sueldo': sueldo_detectado,
+                                'compania': 'Confidencial',
+                                'url_publicacion': link
+                            })
+
+                            contador_rol += 1
+                            nuevos_ciclo += 1
+                            print(f"   ✅ (+1) {titulo[:35]}...")
+
+                        except: continue
+                    
+                    if nuevos_ciclo == 0:
+                        intentos_sin_nuevos += 1
+                        if intentos_sin_nuevos >= 3: break
+                    else:
+                        intentos_sin_nuevos = 0
+
+                self.registros_por_rol[rol] = contador_rol
+
+        except Exception as e:
+            print(f"❌ Error crítico: {e}")
+        finally:
+            try: driver.quit()
+            except: pass
+            self.guardar_supabase()
+
+    def guardar_supabase(self):
+        """Guarda todo lo recolectado de una sola vez al final"""
+        if not self.datos: return
+
+        df = pd.DataFrame(self.datos)
+        df.drop_duplicates(subset=['url_publicacion'], inplace=True)
+        print(f"\n💾 Guardando {len(df)} ofertas únicas en Supabase...")
+
+        exitos = 0
+        for _, row in df.iterrows():
+            datos_fila = row.to_dict()
+            if guardar_oferta_cruda(datos_fila):
+                exitos += 1
+            time.sleep(0.01)
+        print(f"✅ {exitos} ofertas guardadas correctamente.")
 
 if __name__ == "__main__":
-    recolector_fuerza_bruta()
+    # Esto permite probar el archivo solo
+    bot = RecolectorJooble(ROLES_A_BUSCAR, scrape_days=3)
+    bot.recolectar()

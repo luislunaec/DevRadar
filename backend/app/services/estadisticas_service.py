@@ -4,7 +4,7 @@ from app.utils import parse_habilidades
 from app.services.ai_service import get_embedding 
 
 # Umbral de similitud. 
-SIMILARITY_THRESHOLD = 0.25
+SIMILARITY_THRESHOLD = 0.27
 
 def _aplicar_filtro_semantico(query_builder, rol: str | None):
     """

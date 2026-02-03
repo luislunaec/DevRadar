@@ -17,14 +17,15 @@ from db.supabase_helper import guardar_oferta_cruda
 
 class RecolectorComputrabajo:
     """
-    Scraper mejorado con salida en formato JSON y contador por rol.
-    Solo obtiene ofertas recientes según scrape_days (pubdate); no borra jobs_raw, solo append.
+    Scraper que recibe una lista de roles y busca ofertas.
+    NO tiene roles definidos por defecto en la clase; depende de quien la llame (Main).
     """
 
-    def __init__(self, roles, scrape_days: int = 7):
+    def __init__(self, roles, scrape_days: int = 30):
         self.base_url = "https://ec.computrabajo.com"
-        self.roles = roles
-        self.scrape_days = scrape_days  # días hacia atrás para pubdate
+        # AQUÍ RECIBE LA LISTA DEL JEFE (MAIN)
+        self.roles = roles 
+        self.scrape_days = scrape_days
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
@@ -81,13 +82,14 @@ class RecolectorComputrabajo:
         return None
 
     def recolectar(self, paginas_por_rol=3):
+        # Usa self.roles, que fue inyectado al iniciar la clase
         for rol in self.roles:
             print(f"\n{'=' * 60}")
             print(f"Buscando links para: {rol}")
             print(f"{'=' * 60}")
 
             slug = rol.replace(" ", "-")
-            contador_rol = 0  # Contador para este rol específico
+            contador_rol = 0
 
             for p in range(1, paginas_por_rol + 1):
                 url = f"{self.base_url}/trabajo-de-{slug}?pubdate={self.scrape_days}&p={p}"
@@ -98,7 +100,7 @@ class RecolectorComputrabajo:
                     soup = BeautifulSoup(res.content, 'html.parser')
                     ofertas = soup.find_all('article', class_='box_offer') or soup.find_all('article')
 
-                    ofertas_pagina = 0  # Contador para esta página
+                    ofertas_pagina = 0
                     for oferta in ofertas:
                         titulo_tag = oferta.find('h1') or oferta.find('a', recursive=True)
                         if not titulo_tag: continue
@@ -134,7 +136,6 @@ class RecolectorComputrabajo:
                         fecha_texto, descripcion = self.parse_detalle(link)
                         fecha_calculada = self.parsear_fecha(fecha_texto) if fecha_texto else ''
 
-                        # --- AQUÍ ESTÁ EL CAMBIO SOLICITADO ---
                         self.datos.append({
                             'plataforma': 'computrabajo',
                             'rol_busqueda': rol,
@@ -146,7 +147,6 @@ class RecolectorComputrabajo:
                             'compania': compania,
                             'url_publicacion': link,
                         })
-                        # --------------------------------------
 
                         contador_rol += 1
                         ofertas_pagina += 1
@@ -157,7 +157,6 @@ class RecolectorComputrabajo:
                 except Exception as e:
                     print(f"Error en página {p}: {e}")
 
-            # Guardar contador para este rol
             self.registros_por_rol[rol] = contador_rol
             print(f"\n✓ Total para '{rol}': {contador_rol} registros")
 
@@ -193,32 +192,24 @@ class RecolectorComputrabajo:
             return '', ''
 
     def mostrar_resumen(self):
-        """Muestra un resumen detallado de los registros por rol"""
         print(f"\n{'=' * 60}")
         print("RESUMEN DE RECOLECCIÓN")
         print(f"{'=' * 60}\n")
-
-        # Ordenar por cantidad de registros (descendente)
         roles_ordenados = sorted(self.registros_por_rol.items(), key=lambda x: x[1], reverse=True)
-
         for i, (rol, cantidad) in enumerate(roles_ordenados, 1):
             print(f"{i:2}. {rol:30} → {cantidad:4} registros")
-
         total = sum(self.registros_por_rol.values())
         print(f"\n{'=' * 60}")
         print(f"TOTAL DE REGISTROS (con duplicados): {total}")
         print(f"{'=' * 60}\n")
 
     def guardar_supabase(self):
-        """Guarda los datos directamente en Supabase tabla jobs_raw"""
         df = pd.DataFrame(self.datos)
-
         print(f"\nRegistros antes de eliminar duplicados: {len(df)}")
         if not df.empty:
             df.drop_duplicates(subset=['url_publicacion'], inplace=True)
         print(f"Registros después de eliminar duplicados: {len(df)}")
 
-        # Guardar en Supabase
         exitos = 0
         errores = 0
         for _, row in df.iterrows():
@@ -233,30 +224,33 @@ class RecolectorComputrabajo:
                 'compania': row.get('compania', 'Confidencial'),
                 'url_publicacion': row.get('url_publicacion', '')
             }
-            
             if guardar_oferta_cruda(datos):
                 exitos += 1
             else:
                 errores += 1
-            time.sleep(0.05)  # Pequeña pausa para no saturar
+            time.sleep(0.05)
         
         print(f"\n✓ {exitos}/{len(df)} ofertas guardadas en Supabase (jobs_raw)")
         if errores > 0:
-            print(f"⚠️ {errores} ofertas no se pudieron guardar (ver errores arriba)")
+            print(f"⚠️ {errores} ofertas no se pudieron guardar")
 
-
-# Lista de roles por defecto para usar en el scraper
-ROLES_DEFAULT = [
-    # --- GENERALISTAS Y CLÁSICOS ---
-    "sistemas de información"
-]
-
+# =============================================================================
+# 🏁 BLOQUE DE EJECUCIÓN MANUAL (SOLO SI EJECUTAS ESTE ARCHIVO SOLO)
+# =============================================================================
 if __name__ == "__main__":
+    # Esta lista SOLO EXISTE AQUÍ, para pruebas locales.
+    # Cuando uses main.py, esta lista SE IGNORA y se usa la del main.
+    ROLES_PRUEBA = [
+        "programador python", 
+        "analista de datos"
+    ]
+    
+    print("⚠️ MODO PRUEBA: Usando lista local (no la del Main)")
     inicio = time.time()
-    bot = RecolectorComputrabajo(ROLES_DEFAULT, scrape_days=7)
-    bot.recolectar(paginas_por_rol=3)
+    
+    # Aquí instanciamos la clase pasándole la lista de prueba
+    bot = RecolectorComputrabajo(ROLES_PRUEBA, scrape_days=30)
+    bot.recolectar(paginas_por_rol=1) # Pocas páginas para prueba rápida
 
     fin = time.time()
-    tiempo_total = fin - inicio
-
-    print(f"\nTiempo total de ejecución: {tiempo_total:.2f} segundos")
+    print(f"\nTiempo total de ejecución: {fin - inicio:.2f} segundos")
