@@ -8,23 +8,28 @@ import random
 from datetime import datetime, timedelta
 import re
 
-# Permitir imports cuando se ejecuta directamente desde scrapers/
+# =============================================================================
+# 🔗 CONFIGURACIÓN DE RUTAS E IMPORTACIONES
+# =============================================================================
+# Permitir imports cuando se ejecuta desde main.py o directamente
 _scraper_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _scraper_root not in sys.path:
     sys.path.insert(0, _scraper_root)
 
+# Importamos la función real de guardado en base de datos
 from db.supabase_helper import guardar_oferta_cruda
 
 class RecolectorComputrabajo:
     """
-    Scraper que recibe una lista de roles y busca ofertas.
-    NO tiene roles definidos por defecto en la clase; depende de quien la llame (Main).
+    Scraper DE PRODUCCIÓN para Computrabajo.
+    - Usa 'requests' (rápido).
+    - Tiene paginación infinita automática.
+    - Guarda directamente en Supabase.
     """
 
     def __init__(self, roles, scrape_days: int = 30):
         self.base_url = "https://ec.computrabajo.com"
-        # AQUÍ RECIBE LA LISTA DEL JEFE (MAIN)
-        self.roles = roles 
+        self.roles = roles  # Recibe la lista del Main
         self.scrape_days = scrape_days
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -81,26 +86,52 @@ class RecolectorComputrabajo:
                 return None
         return None
 
-    def recolectar(self, paginas_por_rol=3):
-        # Usa self.roles, que fue inyectado al iniciar la clase
+    def recolectar(self):
+        """
+        Recorre TODAS las páginas disponibles para cada rol en la lista.
+        """
         for rol in self.roles:
             print(f"\n{'=' * 60}")
-            print(f"Buscando links para: {rol}")
+            print(f"🔎 BUSCANDO EN COMPUTRABAJO: {rol.upper()}")
             print(f"{'=' * 60}")
 
             slug = rol.replace(" ", "-")
             contador_rol = 0
+            pagina_actual = 1
+            max_paginas_seguridad = 60 # 🛑 Límite de seguridad para no entrar en loop infinito
 
-            for p in range(1, paginas_por_rol + 1):
-                url = f"{self.base_url}/trabajo-de-{slug}?pubdate={self.scrape_days}&p={p}"
+            while pagina_actual <= max_paginas_seguridad:
+                url = f"{self.base_url}/trabajo-de-{slug}?pubdate={self.scrape_days}&p={pagina_actual}"
+                
                 try:
+                    # Pequeña pausa para no ser bloqueados
+                    time.sleep(random.uniform(2, 4))
+                    
+                    print(f"   📡 Solicitando Pág {pagina_actual}...", end=" ")
                     res = requests.get(url, headers=self.headers, timeout=10)
-                    if res.status_code != 200: break
+                    
+                    if res.status_code != 200: 
+                        print(f"❌ Error HTTP {res.status_code}. Deteniendo rol.")
+                        break
 
                     soup = BeautifulSoup(res.content, 'html.parser')
+                    
+                    # Verificar si hay alerta de "No hay ofertas"
+                    no_ofertas = soup.find('div', string=re.compile("No se ha encontrado ofertas"))
+                    if no_ofertas:
+                        print("🚫 Fin de resultados (Mensaje web).")
+                        break
+
                     ofertas = soup.find_all('article', class_='box_offer') or soup.find_all('article')
 
-                    ofertas_pagina = 0
+                    if not ofertas:
+                        print(f"🚫 0 ofertas encontradas. Fin del camino.")
+                        break
+
+                    print(f"✅ {len(ofertas)} ofertas.")
+
+                    # PROCESAMIENTO DE OFERTAS
+                    ofertas_nuevas_en_pagina = 0
                     for oferta in ofertas:
                         titulo_tag = oferta.find('h1') or oferta.find('a', recursive=True)
                         if not titulo_tag: continue
@@ -113,6 +144,7 @@ class RecolectorComputrabajo:
                         raw_title = titulo_tag.get_text(strip=True)
                         oferta_laboral = raw_title.replace('PostuladoVista', '').strip()
 
+                        # --- Extracción de Datos ---
                         parrafos = oferta.find_all('p')
                         locacion = 'Ecuador'
                         if len(parrafos) > 1:
@@ -133,6 +165,8 @@ class RecolectorComputrabajo:
                                 break
 
                         sueldo_numerico = self.extraer_sueldo_numerico(sueldo_texto)
+                        
+                        # Pausa micro para detalle (opcional)
                         fecha_texto, descripcion = self.parse_detalle(link)
                         fecha_calculada = self.parsear_fecha(fecha_texto) if fecha_texto else ''
 
@@ -149,23 +183,31 @@ class RecolectorComputrabajo:
                         })
 
                         contador_rol += 1
-                        ofertas_pagina += 1
+                        ofertas_nuevas_en_pagina += 1
 
-                    print(f"Página {p} procesada: {ofertas_pagina} ofertas encontradas")
-                    time.sleep(random.uniform(2, 4))
+                    # Si encontramos ofertas, pasamos a la siguiente página
+                    if ofertas_nuevas_en_pagina > 0:
+                        pagina_actual += 1
+                    else:
+                        print("   ⚠️ Página vacía o sin datos válidos. Terminando rol.")
+                        break
 
                 except Exception as e:
-                    print(f"Error en página {p}: {e}")
+                    print(f"\n   💥 Error crítico en p.{pagina_actual}: {e}")
+                    break
 
             self.registros_por_rol[rol] = contador_rol
-            print(f"\n✓ Total para '{rol}': {contador_rol} registros")
+            print(f"   🏆 Total '{rol}': {contador_rol} registros recolectados.")
 
+        # FINALMENTE: GUARDAR TODO EN SUPABASE
         self.guardar_supabase()
         self.mostrar_resumen()
 
     def parse_detalle(self, url):
         try:
-            res = requests.get(url, headers=self.headers, timeout=10)
+            # Random delay para no quemar la IP
+            time.sleep(random.uniform(0.1, 0.5)) 
+            res = requests.get(url, headers=self.headers, timeout=5)
             if res.status_code != 200: return '', ''
             soup = BeautifulSoup(res.content, 'html.parser')
 
@@ -193,7 +235,7 @@ class RecolectorComputrabajo:
 
     def mostrar_resumen(self):
         print(f"\n{'=' * 60}")
-        print("RESUMEN DE RECOLECCIÓN")
+        print("RESUMEN DE RECOLECCIÓN COMPUTRABAJO")
         print(f"{'=' * 60}\n")
         roles_ordenados = sorted(self.registros_por_rol.items(), key=lambda x: x[1], reverse=True)
         for i, (rol, cantidad) in enumerate(roles_ordenados, 1):
@@ -204,53 +246,44 @@ class RecolectorComputrabajo:
         print(f"{'=' * 60}\n")
 
     def guardar_supabase(self):
+        """
+        Limpia duplicados y envía a Supabase (jobs_raw).
+        """
         df = pd.DataFrame(self.datos)
-        print(f"\nRegistros antes de eliminar duplicados: {len(df)}")
-        if not df.empty:
-            df.drop_duplicates(subset=['url_publicacion'], inplace=True)
-        print(f"Registros después de eliminar duplicados: {len(df)}")
-
-        exitos = 0
-        errores = 0
-        for _, row in df.iterrows():
-            datos = {
-                'plataforma': row.get('plataforma', 'computrabajo'),
-                'rol_busqueda': row.get('rol_busqueda', ''),
-                'fecha_publicacion': row.get('fecha_publicacion', ''),
-                'oferta_laboral': row.get('oferta_laboral', 'Sin Título'),
-                'locacion': row.get('locacion', 'Ecuador'),
-                'descripcion': row.get('descripcion', ''),
-                'sueldo': row.get('sueldo'),
-                'compania': row.get('compania', 'Confidencial'),
-                'url_publicacion': row.get('url_publicacion', '')
-            }
-            if guardar_oferta_cruda(datos):
-                exitos += 1
-            else:
-                errores += 1
-            time.sleep(0.05)
+        print(f"\n💾 Procesando {len(df)} registros para Supabase...")
         
-        print(f"\n✓ {exitos}/{len(df)} ofertas guardadas en Supabase (jobs_raw)")
-        if errores > 0:
-            print(f"⚠️ {errores} ofertas no se pudieron guardar")
+        if not df.empty:
+            # Eliminar duplicados exactos de URL antes de subir
+            df.drop_duplicates(subset=['url_publicacion'], inplace=True)
+            print(f"   ↳ {len(df)} registros únicos listos para subir.")
 
-# =============================================================================
-# 🏁 BLOQUE DE EJECUCIÓN MANUAL (SOLO SI EJECUTAS ESTE ARCHIVO SOLO)
-# =============================================================================
-if __name__ == "__main__":
-    # Esta lista SOLO EXISTE AQUÍ, para pruebas locales.
-    # Cuando uses main.py, esta lista SE IGNORA y se usa la del main.
-    ROLES_PRUEBA = [
-        "programador python", 
-        "analista de datos"
-    ]
-    
-    print("⚠️ MODO PRUEBA: Usando lista local (no la del Main)")
-    inicio = time.time()
-    
-    # Aquí instanciamos la clase pasándole la lista de prueba
-    bot = RecolectorComputrabajo(ROLES_PRUEBA, scrape_days=30)
-    bot.recolectar(paginas_por_rol=1) # Pocas páginas para prueba rápida
-
-    fin = time.time()
-    print(f"\nTiempo total de ejecución: {fin - inicio:.2f} segundos")
+            exitos = 0
+            errores = 0
+            
+            for _, row in df.iterrows():
+                datos = {
+                    'plataforma': row.get('plataforma', 'computrabajo'),
+                    'rol_busqueda': row.get('rol_busqueda', ''),
+                    'fecha_publicacion': row.get('fecha_publicacion', ''),
+                    'oferta_laboral': row.get('oferta_laboral', 'Sin Título'),
+                    'locacion': row.get('locacion', 'Ecuador'),
+                    'descripcion': row.get('descripcion', ''),
+                    'sueldo': row.get('sueldo'),
+                    'compania': row.get('compania', 'Confidencial'),
+                    'url_publicacion': row.get('url_publicacion', '')
+                }
+                
+                # LLAMADA A LA BASE DE DATOS
+                if guardar_oferta_cruda(datos):
+                    exitos += 1
+                else:
+                    errores += 1
+                
+                # Pausa mínima para no saturar la API
+                time.sleep(0.01)
+            
+            print(f"\n✅ SUBIDA COMPLETA: {exitos} guardados exitosamente.")
+            if errores > 0:
+                print(f"⚠️ {errores} errores al guardar.")
+        else:
+            print("\n⚠️ No hay datos para guardar.")
