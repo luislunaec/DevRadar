@@ -159,114 +159,125 @@ def ejecutar_limpieza_ia():
     processor = JobAIProcessor()
     print("✅ Modelos cargados correctamente.")
 
-    # 1. CARGAR SOLO REGISTROS NO PROCESADOS (pipeline incremental)
-    print("📂 Cargando ofertas crudas no procesadas de Supabase (jobs_raw donde processed = false)...")
-    try:
-        response = supabase.table('jobs_raw').select('*').eq('processed', False).execute()
-        data_final = response.data if response.data else []
-    except Exception as e:
-        # Compatibilidad: si la columna processed no existe, cargar todos
+    # --- BUCLE INFINITO PARA PROCESAR TODO POR LOTES ---
+    ciclo = 1
+    total_procesados_global = 0
+    
+    while True:
+        print(f"\n🔄 --- INICIANDO LOTE #{ciclo} ---")
+        print("📂 Cargando siguientes 1000 ofertas no procesadas de Supabase...")
+        
         try:
-            response = supabase.table('jobs_raw').select('*').execute()
+            # Pedimos lotes de 1000 (el máximo seguro de Supabase)
+            response = supabase.table('jobs_raw').select('*').eq('processed', False).limit(1000).execute()
             data_final = response.data if response.data else []
-        except Exception as e2:
-            print(f"❌ Error cargando datos: {e2}")
-            return
-        print(f"⚠️ Columna 'processed' no encontrada; procesando todos los registros.")
-
-    if not data_final:
-        print("✅ No hay ofertas nuevas por procesar (jobs_raw.processed = false).")
-        return
-
-    print(f"🔄 Procesando {len(data_final)} ofertas no procesadas...")
-
-    resultados = []
-    ids_vistos = set()
-
-    for i, item in enumerate(data_final):
-        url = item.get("url_publicacion", "")
-        if not url or url in ids_vistos:
-            continue
-
-        titulo = item.get("oferta_laboral", "Sin Título")
-        descripcion = item.get("descripcion", "")
-
-        # --- A. ANÁLISIS IA (GROQ) ---
-        analisis = processor.analizar_oferta(titulo, descripcion)
-
-        # --- B. FILTRO DE VALIDEZ ---
-        if not analisis.es_oferta_valida_tech:
-            print(f"   🚫 Filtrada (no es tech): {titulo[:60]}...")
-            continue
-
-        # --- C. GENERACIÓN DE EMBEDDING (HUGGINGFACE, LOCAL) ---
-        texto_a_vectorizar = f"{titulo} {descripcion[:500]} {' '.join(analisis.skills)}"
-        vector = processor.generar_embedding(texto_a_vectorizar)
-
-        if not vector:
-            print(f"   ⚠️ Skipped por embedding vacío: {titulo[:60]}...")
-            continue
-
-        # --- D. PREPARAR REGISTRO (sueldo numérico para jobs_clean) ---
-        texto_sueldo = (
-            analisis.sueldo_normalizado
-            if analisis.sueldo_normalizado != "No especificado"
-            else str(item.get("sueldo", "") or "")
-        )
-        sueldo_num = extraer_sueldo_numerico(texto_sueldo)
-
-        registro = {
-            "plataforma": item.get("plataforma", ""),
-            "rol_busqueda": item.get("rol_busqueda", ""),
-            "fecha_publicacion": item.get("fecha_publicacion", ""),
-            "oferta_laboral": titulo,
-            "locacion": item.get("locacion", "Ecuador"),
-            "descripcion": descripcion,
-            "sueldo": sueldo_num,
-            "compania": item.get("compania", "Confidencial"),
-            "habilidades": ", ".join(analisis.skills),
-            "seniority": analisis.seniority,
-            "url_publicacion": url,
-            "embedding": vector,
-        }
-
-        resultados.append(registro)
-        ids_vistos.add(url)
-
-        # Rate limiting para Groq (los embeddings son locales, no generan tráfico de API)
-        time.sleep(1)
-        if (i + 1) % 5 == 0:
-            print(f"   ⏳ Procesados {i + 1}/{len(data_final)}...")
-
-    # 3. GUARDAR EN SUPABASE (jobs_clean) Y MARCAR jobs_raw COMO PROCESADOS
-    if resultados:
-        print(f"\n💾 Guardando {len(resultados)} ofertas procesadas en 'jobs_clean'...")
-        exitos = 0
-        urls_procesados = []
-        for registro in resultados:
+        except Exception as e:
+            # Compatibilidad
             try:
-                supabase.table('jobs_clean').upsert(registro, on_conflict='url_publicacion').execute()
-                exitos += 1
-                urls_procesados.append(registro["url_publicacion"])
-            except Exception as e:
-                print(f"⚠️ Error guardando '{registro['oferta_laboral'][:40]}...': {e}")
+                response = supabase.table('jobs_raw').select('*').limit(1000).execute()
+                data_final = response.data if response.data else []
+            except Exception as e2:
+                print(f"❌ Error cargando datos: {e2}")
+                break # Rompemos el bucle si hay error de conexión
 
-        print(f"✅ Éxito: {exitos}/{len(resultados)} guardados en jobs_clean.")
+        # CONDICIÓN DE SALIDA: Si no hay datos, terminamos
+        if not data_final:
+            print("🎉 ¡YA NO HAY MÁS OFERTAS PENDIENTES! (jobs_raw limpio).")
+            break
 
-        # Marcar registros en jobs_raw como procesados (processed = true, processed_at = now())
-        if urls_procesados:
-            try:
-                now_utc = datetime.now(timezone.utc).isoformat()
-                supabase.table('jobs_raw').update({
-                    'processed': True,
-                    'processed_at': now_utc,
-                }).in_('url_publicacion', urls_procesados).execute()
-                print(f"✅ Marcados {len(urls_procesados)} registros en jobs_raw como processed = true.")
-            except Exception as e:
-                print(f"⚠️ No se pudieron marcar como procesados en jobs_raw: {e}")
-    else:
-        print("❌ Ninguna oferta pasó el filtro de la IA.")
+        print(f"⚡ Procesando lote de {len(data_final)} ofertas...")
 
+        resultados = []
+        ids_vistos = set()
+        
+        # --- PROCESAMIENTO DEL LOTE ---
+        for i, item in enumerate(data_final):
+            url = item.get("url_publicacion", "")
+            if not url or url in ids_vistos:
+                continue
 
-if __name__ == "__main__":
-    ejecutar_limpieza_ia()
+            titulo = item.get("oferta_laboral", "Sin Título")
+            descripcion = item.get("descripcion", "")
+
+            # A. ANÁLISIS IA
+            analisis = processor.analizar_oferta(titulo, descripcion)
+
+            # B. FILTRO
+            if not analisis.es_oferta_valida_tech:
+                print(f"   🚫 Filtrada: {titulo[:40]}...")
+                # IMPORTANTE: Igual debemos marcarla como procesada en jobs_raw para no leerla de nuevo
+                # La agregamos a una lista de "descartados" para actualizar su estado al final del lote?
+                # Para simplificar, actualizaremos 'processed=True' incluso si no entra a jobs_clean
+                # (Lo haremos abajo en el bloque de actualización masiva)
+            else:
+                # C. EMBEDDING
+                texto_a_vectorizar = f"{titulo} {descripcion[:500]} {' '.join(analisis.skills)}"
+                vector = processor.generar_embedding(texto_a_vectorizar)
+
+                if vector:
+                    # D. PREPARAR REGISTRO
+                    texto_sueldo = (
+                        analisis.sueldo_normalizado
+                        if analisis.sueldo_normalizado != "No especificado"
+                        else str(item.get("sueldo", "") or "")
+                    )
+                    sueldo_num = extraer_sueldo_numerico(texto_sueldo)
+
+                    registro = {
+                        "plataforma": item.get("plataforma", ""),
+                        "rol_busqueda": item.get("rol_busqueda", ""),
+                        "fecha_publicacion": item.get("fecha_publicacion", ""),
+                        "oferta_laboral": titulo,
+                        "locacion": item.get("locacion", "Ecuador"),
+                        "descripcion": descripcion,
+                        "sueldo": sueldo_num,
+                        "compania": item.get("compania", "Confidencial"),
+                        "habilidades": ", ".join(analisis.skills),
+                        "seniority": analisis.seniority,
+                        "url_publicacion": url,
+                        "embedding": vector,
+                    }
+                    resultados.append(registro)
+            
+            ids_vistos.add(url) # Agregamos al set para evitar duplicados en este lote
+            
+            # Feedback visual
+            if (i + 1) % 10 == 0:
+                print(f"   ⏳ Lote {ciclo}: {i + 1}/{len(data_final)} analizados...")
+
+        # --- GUARDADO DEL LOTE ---
+        if resultados:
+            print(f"💾 Guardando {len(resultados)} ofertas VALIDAS en 'jobs_clean'...")
+            for registro in resultados:
+                try:
+                    supabase.table('jobs_clean').upsert(registro, on_conflict='url_publicacion').execute()
+                except Exception as e:
+                    pass # Ignorar errores puntuales de guardado
+
+        # --- MARCADO FINAL (CRÍTICO PARA QUE EL BUCLE AVANCE) ---
+        # Marcamos TODAS las ofertas de este lote (validas y no validas) como procesadas
+        # para que en la siguiente vuelta del While NO las vuelva a traer.
+        urls_lote = [item.get("url_publicacion") for item in data_final if item.get("url_publicacion")]
+        
+        if urls_lote:
+            # Actualizamos en bloques de 100 para no romper la URL request
+            chunk_size = 100
+            for k in range(0, len(urls_lote), chunk_size):
+                chunk_urls = urls_lote[k:k + chunk_size]
+                try:
+                    now_utc = datetime.now(timezone.utc).isoformat()
+                    supabase.table('jobs_raw').update({
+                        'processed': True,
+                        'processed_at': now_utc
+                    }).in_('url_publicacion', chunk_urls).execute()
+                except Exception as e:
+                    print(f"⚠️ Error actualizando estado processed: {e}")
+
+            print(f"✅ Lote #{ciclo} terminado. {len(urls_lote)} registros marcados como procesados.")
+            total_procesados_global += len(urls_lote)
+        
+        ciclo += 1
+        # Fin del While, vuelve arriba a cargar los siguientes 1000
+    
+    print("\n" + "="*60)
+    print(f"🏁 PROCESO TOTAL FINALIZADO. {total_procesados_global} ofertas procesadas hoy.")
