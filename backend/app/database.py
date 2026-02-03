@@ -1,22 +1,20 @@
-"""
-Conexión a Supabase (misma configuración que el scraper).
-Usa SUPABASE_URL y SUPABASE_KEY del .env
-"""
+from supabase import create_client, Client
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+_SUPABASE_CLIENT: Client | None = None
 
-_supabase = None
 
-def get_supabase():
-    global _supabase
-    if _supabase is None:
-        if not SUPABASE_URL or not SUPABASE_KEY:
-            raise ValueError("Faltan SUPABASE_URL o SUPABASE_KEY en el .env")
-        from supabase import create_client
-        _supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    return _supabase
+def get_supabase() -> Client:
+    """
+    Retorna un cliente singleton de Supabase.
+    """
+    global _SUPABASE_CLIENT
+
+    if _SUPABASE_CLIENT is None:
+        _SUPABASE_CLIENT = create_client(
+            os.getenv("SUPABASE_URL"),
+            os.getenv("SUPABASE_KEY"),
+        )
+
+    return _SUPABASE_CLIENT

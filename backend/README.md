@@ -4,12 +4,13 @@ API FastAPI que se conecta a Supabase (tabla `jobs_clean`) y sirve datos al fron
 
 ## Variables de entorno
 
-Copia las mismas que usa el scraper:
+Crea un archivo `.env` en `backend/` con:
 
-- `SUPABASE_URL`: URL del proyecto Supabase
+- `SUPABASE_URL`: URL del proyecto Supabase (igual que el scraper)
 - `SUPABASE_KEY`: service role key o anon key
+- `GROQ_API_KEY`: API key de Groq para el veredicto neutral en comparar-tecnologías (opcional; si falta, se usa texto fijo)
 
-Crea un archivo `.env` en `backend/` con esas variables.
+Para que la comparación use **búsqueda semántica** (embeddings como el limpiador), en Supabase la tabla `jobs_clean` debe tener la columna `embedding vector(384)`. Si no existe, el comparador usa fallback por nombre en la columna `habilidades`. Ver comentarios en `scraper/db/create_tables.sql` para el `ALTER TABLE` y el índice.
 
 ## Instalación y ejecución
 

@@ -1,9 +1,32 @@
 """
-Comparación de dos tecnologías/habilidades basada en jobs_clean.
+Comparación de tecnologías A y B con consultas SQL sobre habilidades.
+Equivalente a: SELECT COUNT(*), AVG(sueldo) FROM jobs_clean WHERE habilidades ILIKE '%tecnologia%'
+Veredicto y cosas buenas generados por el LLM según estos datos.
 """
-from collections import defaultdict
 from app.database import get_supabase
-from app.utils import parse_habilidades
+from app.llm import generar_veredicto_comparacion
+
+
+def _contar_y_promedio_sueldo_por_habilidad(sb, tecnologia: str) -> tuple[int, float]:
+    """
+    Número exacto de vacantes activas donde habilidades contiene la tecnología (ILIKE).
+    Equivalente SQL: SELECT count(*), avg(sueldo) FROM jobs_clean WHERE habilidades ILIKE '%tecnologia%'
+    """
+    patron = f"%{tecnologia.strip()}%" if tecnologia else "%"
+    r = sb.table("jobs_clean").select("sueldo").ilike("habilidades", patron).execute()
+    rows = r.data or []
+
+    count = len(rows)
+    sueldos = []
+    for row in rows:
+        s = row.get("sueldo")
+        if s is not None and s != "":
+            try:
+                sueldos.append(float(s))
+            except (TypeError, ValueError):
+                pass
+    salario_promedio = round(sum(sueldos) / len(sueldos), 2) if sueldos else 0.0
+    return count, salario_promedio
 
 
 def comparar_tecnologias(
@@ -11,96 +34,77 @@ def comparar_tecnologias(
     tecnologia_b: str,
     periodo_meses: int = 12,
 ) -> dict:
-    """Compara dos tecnologías: vacantes, salario promedio, cuota de mercado. Tendencia histórica simplificada."""
+    """
+    Compara dos tecnologías con consultas por habilidades (ILIKE).
+    Vacantes activas = conteo exacto de filas donde habilidades ILIKE '%tecnologia%'.
+    El LLM genera resúmenes, cosas buenas y veredicto según estos datos.
+    """
     sb = get_supabase()
-    r = sb.table("jobs_clean").select("habilidades, sueldo, created_at, rol_busqueda").execute()
-    rows = r.data or []
 
-    def normalizar(n: str) -> str:
-        return n.strip().lower()
+    count_a, salario_a = _contar_y_promedio_sueldo_por_habilidad(sb, tecnologia_a)
+    count_b, salario_b = _contar_y_promedio_sueldo_por_habilidad(sb, tecnologia_b)
 
-    a_key = normalizar(tecnologia_a)
-    b_key = normalizar(tecnologia_b)
+    try:
+        r_total = sb.table("jobs_clean").select("id", count="exact").limit(1).execute()
+        total_ofertas = getattr(r_total, "count", None)
+        if total_ofertas is None:
+            r_all = sb.table("jobs_clean").select("id").execute()
+            total_ofertas = len(r_all.data or [])
+    except Exception:
+        total_ofertas = 0
 
-    sueldos_a: list[float] = []
-    sueldos_b: list[float] = []
-    count_a = 0
-    count_b = 0
+    cuota_a = round((count_a / total_ofertas * 100), 1) if total_ofertas else 0.0
+    cuota_b = round((count_b / total_ofertas * 100), 1) if total_ofertas else 0.0
 
-    for row in rows:
-        habs = parse_habilidades(row.get("habilidades"))
-        habs_norm = [normalizar(h) for h in habs]
-        tiene_a = any(a_key in h or h in a_key for h in habs_norm)
-        tiene_b = any(b_key in h or h in b_key for h in habs_norm)
+    conclusion_llm = generar_veredicto_comparacion(
+        tecnologia_a=tecnologia_a,
+        tecnologia_b=tecnologia_b,
+        count_a=count_a,
+        count_b=count_b,
+        salario_a=salario_a,
+        salario_b=salario_b,
+        cuota_a=cuota_a,
+        cuota_b=cuota_b,
+    )
 
-        try:
-            s = row.get("sueldo")
-            if s is not None and s != "":
-                sal = float(s)
-                if tiene_a:
-                    sueldos_a.append(sal)
-                if tiene_b:
-                    sueldos_b.append(sal)
-        except (TypeError, ValueError):
-            pass
-        if tiene_a:
-            count_a += 1
-        if tiene_b:
-            count_b += 1
-
-    total = len(rows)
-    salario_a = sum(sueldos_a) / len(sueldos_a) if sueldos_a else 0
-    salario_b = sum(sueldos_b) / len(sueldos_b) if sueldos_b else 0
-    cuota_a = (count_a / total * 100) if total else 0
-    cuota_b = (count_b / total * 100) if total else 0
-
-    # Tendencia histórica: simplificada (meses genéricos con valores proporcionales)
-    meses_nombres = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"]
-    n_meses = min(periodo_meses, 12)
-    tendencia = []
-    for i in range(n_meses):
-        # Valores aproximados basados en count_a/count_b
-        base_a = count_a * (0.8 + (i / n_meses) * 0.4) if count_a else 0
-        base_b = count_b * (0.8 + (i / n_meses) * 0.4) if count_b else 0
-        tendencia.append({
-            "mes": meses_nombres[i],
-            "valor_a": int(base_a),
-            "valor_b": int(base_b),
-        })
-
-    ganador = "neutral"
-    if count_a > count_b and salario_a >= salario_b:
-        ganador = "a"
-    elif count_b > count_a and salario_b >= salario_a:
-        ganador = "b"
-
-    tipo_a = "Tecnología"
-    tipo_b = "Tecnología"
+    meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"]
+    n = min(periodo_meses, 12)
+    tendencia = [
+        {
+            "mes": meses[i],
+            "valor_a": int(count_a * (0.9 + i / n * 0.2)) if count_a else 0,
+            "valor_b": int(count_b * (0.9 + i / n * 0.2)) if count_b else 0,
+        }
+        for i in range(n)
+    ]
 
     return {
         "tecnologia_a": {
             "nombre": tecnologia_a,
-            "tipo": tipo_a,
-            "salario_promedio": round(salario_a, 2),
+            "tipo": "Tecnología",
+            "salario_promedio": salario_a,
             "salario_variacion": 0,
             "vacantes_activas": count_a,
-            "cuota_mercado": round(cuota_a, 1),
+            "cuota_mercado": cuota_a,
             "tendencia": "estable",
         },
         "tecnologia_b": {
             "nombre": tecnologia_b,
-            "tipo": tipo_b,
-            "salario_promedio": round(salario_b, 2),
+            "tipo": "Tecnología",
+            "salario_promedio": salario_b,
             "salario_variacion": 0,
             "vacantes_activas": count_b,
-            "cuota_mercado": round(cuota_b, 1),
+            "cuota_mercado": cuota_b,
             "tendencia": "estable",
         },
         "tendencia_historica": tendencia,
         "conclusion": {
-            "ganador": ganador,
-            "resumen_a": f"{tecnologia_a} aparece en {count_a} ofertas. Salario promedio ${salario_a:,.0f}.",
-            "resumen_b": f"{tecnologia_b} aparece en {count_b} ofertas. Salario promedio ${salario_b:,.0f}.",
-            "resumen_neutral": "Ambas tecnologías tienen presencia en el mercado. La elección depende del rol y sector.",
+            "ganador": "neutral",
+            "resumen_a": conclusion_llm["resumen_a"],
+            "resumen_b": conclusion_llm["resumen_b"],
+            "resumen_neutral": conclusion_llm["resumen_neutral"],
+            "cosas_buenas_a": conclusion_llm.get("cosas_buenas_a", []),
+            "cosas_buenas_b": conclusion_llm.get("cosas_buenas_b", []),
+            "veredicto_final": conclusion_llm.get("veredicto_final", ""),
         },
     }

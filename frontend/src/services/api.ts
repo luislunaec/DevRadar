@@ -72,6 +72,9 @@ export interface ComparacionTecnologias {
     resumen_a: string;
     resumen_b: string;
     resumen_neutral: string;
+    cosas_buenas_a?: string[];
+    cosas_buenas_b?: string[];
+    veredicto_final?: string;
   };
 }
 

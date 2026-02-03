@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { compararTecnologias, getHabilidadesPopulares, type ComparacionTecnologias } from '@/services/api';
+import { exportComparacionToPdf } from '@/lib/exportComparePdf';
 
 export default function ComparePage() {
   const [techA, setTechA] = useState('React');
@@ -251,35 +252,75 @@ export default function ComparePage() {
             )}
 
             {comparison?.conclusion && (
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <div className="glass-card p-6 border-l-4 border-primary">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    <h4 className="font-bold text-primary">Conclusión {a?.nombre}</h4>
+              <>
+                {comparison.conclusion.veredicto_final && (
+                  <div className="glass-card p-6 mb-6 border-l-4 border-primary bg-primary/5">
+                    <h4 className="font-bold text-primary mb-2">Veredicto final</h4>
+                    <p className="text-sm text-muted-foreground">{comparison.conclusion.veredicto_final}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{comparison.conclusion.resumen_a}</p>
-                </div>
-                <div className="glass-card p-6 border-l-4 border-warning">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="h-5 w-5 text-warning" />
-                    <h4 className="font-bold text-warning">Veredicto Neutral</h4>
+                )}
+                <div className="grid md:grid-cols-3 gap-6 mb-6">
+                  <div className="glass-card p-6 border-l-4 border-primary">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      <h4 className="font-bold text-primary">Conclusión {a?.nombre}</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">{comparison.conclusion.resumen_a}</p>
+                    {(comparison.conclusion.cosas_buenas_a?.length ?? 0) > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p className="text-xs font-medium text-primary mb-2">Cosas buenas</p>
+                        <ul className="space-y-1 text-sm text-muted-foreground">
+                          {comparison.conclusion.cosas_buenas_a?.map((item, i) => (
+                            <li key={i} className="flex gap-2">
+                              <span className="text-primary">•</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{comparison.conclusion.resumen_neutral}</p>
-                </div>
-                <div className="glass-card p-6 border-l-4 border-accent-purple">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingUp className="h-5 w-5 text-accent-purple" />
-                    <h4 className="font-bold text-accent-purple">Conclusión {b?.nombre}</h4>
+                  <div className="glass-card p-6 border-l-4 border-warning">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingUp className="h-5 w-5 text-warning" />
+                      <h4 className="font-bold text-warning">Veredicto Neutral</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{comparison.conclusion.resumen_neutral}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{comparison.conclusion.resumen_b}</p>
+                  <div className="glass-card p-6 border-l-4 border-accent-purple">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingUp className="h-5 w-5 text-accent-purple" />
+                      <h4 className="font-bold text-accent-purple">Conclusión {b?.nombre}</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">{comparison.conclusion.resumen_b}</p>
+                    {(comparison.conclusion.cosas_buenas_b?.length ?? 0) > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p className="text-xs font-medium text-accent-purple mb-2">Cosas buenas</p>
+                        <ul className="space-y-1 text-sm text-muted-foreground">
+                          {comparison.conclusion.cosas_buenas_b?.map((item, i) => (
+                            <li key={i} className="flex gap-2">
+                              <span className="text-accent-purple">•</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
             </>
           ) : null}
 
         <div className="flex justify-center">
-          <Button variant="outline" size="lg" className="gap-2">
+          <Button
+            variant="outline"
+            size="lg"
+            className="gap-2"
+            disabled={!comparison}
+            onClick={() => comparison && exportComparacionToPdf(techA, techB, comparison)}
+          >
             <Download className="h-5 w-5" />
             Exportar Informe PDF
           </Button>

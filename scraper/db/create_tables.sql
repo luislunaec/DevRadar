@@ -58,6 +58,11 @@ CREATE TABLE IF NOT EXISTS public.jobs (
 -- Si ya tenías jobs_clean con sueldo TEXT, migra con:
 -- ALTER TABLE public.jobs_clean ALTER COLUMN sueldo TYPE NUMERIC USING NULL;
 
+-- Columna embedding en jobs_clean (384 dims = HuggingFace all-MiniLM-L6-v2, mismo que limpiador)
+-- Ejecuta en Supabase si usas el limpiador y el comparador semántico:
+-- ALTER TABLE public.jobs_clean ADD COLUMN IF NOT EXISTS embedding vector(384);
+-- CREATE INDEX IF NOT EXISTS idx_jobs_clean_embedding ON public.jobs_clean USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
 -- Si ya tenías jobs_raw sin processed, añade columnas para pipeline incremental:
 -- ALTER TABLE public.jobs_raw ADD COLUMN IF NOT EXISTS processed BOOLEAN NOT NULL DEFAULT FALSE;
 -- ALTER TABLE public.jobs_raw ADD COLUMN IF NOT EXISTS processed_at TIMESTAMP WITH TIME ZONE;

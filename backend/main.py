@@ -1,3 +1,16 @@
+
+# ⬇️ ESTO VA SIEMPRE ARRIBA DE TODO ⬇️
+from dotenv import load_dotenv
+from pathlib import Path
+import os
+
+BASE_DIR = Path(__file__).resolve().parent
+ENV_PATH = BASE_DIR / ".env"
+
+load_dotenv(ENV_PATH)
+
+# DEBUG temporal (luego lo puedes borrar)
+print("SUPABASE_URL:", os.getenv("SUPABASE_URL"))
 """
 DevRadar Backend - FastAPI
 Conecta con Supabase (jobs_clean) y expone API para el frontend.
