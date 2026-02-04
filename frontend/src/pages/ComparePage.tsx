@@ -218,12 +218,14 @@ export default function ComparePage() {
               </div>
             </div>
 
-            {trendData.length > 0 && (
+            {trendData.length > 0 ? (
               <div className="glass-card p-6 mb-6">
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="text-h3">Tendencia Histórica Comparada</h3>
-                    <p className="text-sm text-muted-foreground">Volumen de ofertas (datos del backend)</p>
+                    <p className="text-sm text-muted-foreground">
+                      Volumen de ofertas por mes (solo meses con datos en la BD)
+                    </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
@@ -248,6 +250,13 @@ export default function ComparePage() {
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
+              </div>
+            ) : (
+              <div className="glass-card p-6 mb-6">
+                <h3 className="text-h3 mb-2">Tendencia Histórica Comparada</h3>
+                <p className="text-sm text-muted-foreground">
+                  No hay datos históricos por mes para el periodo consultado. La tendencia se muestra solo cuando existen ofertas con fecha de publicación en la base de datos (p. ej. últimos 3–12 meses).
+                </p>
               </div>
             )}
 

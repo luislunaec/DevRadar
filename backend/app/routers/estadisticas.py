@@ -28,25 +28,20 @@ def obtener_rol_validado(rol: str | None):
 
 
 @router.get("/mercado")
-def estadisticas_mercado(
-    rol: str | None = None,
-    fecha_desde: str | None = None,
-    fecha_hasta: str | None = None,
-):
+def estadisticas_mercado(rol: str | None = None):
     # 1. Validamos
     es_valido, rol_final, error = obtener_rol_validado(rol)
     
     if not es_valido:
-            # Respuesta vacía para /mercado
-            return {
-                "total_ofertas": 0,
-                "salario_promedio": 0,
-                "nivel_demanda": "bajo",  # <--- CAMBIA ESTO (antes decía "Búsqueda Inválida")
-                "mensaje": f"😅 '{rol}' no parece ser tecnología.",
-            }
+        return {
+            "total_ofertas": 0,
+            "salario_promedio": 0,
+            "nivel_demanda": "bajo",
+            "mensaje": f"😅 '{rol}' no parece ser tecnología.",
+        }
 
-    # 2. Buscamos con el rol corregido (o None si es global)
-    return get_estadisticas_mercado(rol=rol_final, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta)
+    # 2. Buscamos (sin fechas)
+    return get_estadisticas_mercado(rol=rol_final)
 
 
 @router.get("/tecnologias")
@@ -54,21 +49,15 @@ def tecnologias_demandadas(
     limit: int = Query(10, ge=1, le=50),
     rol: str | None = None,
 ):
-    # 1. Validamos también aquí
     es_valido, rol_final, error = obtener_rol_validado(rol)
-    
-    if not es_valido:
-        return [] # Retorna lista vacía -> Gráfica vacía
+    if not es_valido: return []
 
     return get_tecnologias_demandadas(limit=limit, rol=rol_final)
 
 
 @router.get("/seniority")
 def distribucion_seniority(rol: str | None = None):
-    # 1. Validamos también aquí
     es_valido, rol_final, error = obtener_rol_validado(rol)
-    
-    if not es_valido:
-        return [] # Retorna lista vacía -> Gráfica vacía (o objeto vacío según tu frontend)
+    if not es_valido: return [] 
 
     return get_distribucion_seniority(rol=rol_final)

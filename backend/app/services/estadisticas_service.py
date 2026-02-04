@@ -44,26 +44,13 @@ def _aplicar_filtro_semantico(query_builder, rol: str | None):
     return query_builder.in_("id", matched_ids)
 
 
-# --- HELPERS PARA FECHAS (Para no repetir código) ---
-def _aplicar_filtro_fecha(query_builder, fecha_desde: str | None, fecha_hasta: str | None):
-    if fecha_desde:
-        query_builder = query_builder.gte("created_at", fecha_desde)
-    if fecha_hasta:
-        query_builder = query_builder.lte("created_at", fecha_hasta)
-    return query_builder
-
-
-def get_estadisticas_mercado(
-    rol: str | None = None,
-    fecha_desde: str | None = None,
-    fecha_hasta: str | None = None,
-) -> dict:
+def get_estadisticas_mercado(rol: str | None = None) -> dict:
     sb = get_supabase()
-    q = sb.table("jobs_clean").select("id, sueldo, created_at, rol_busqueda")
+    # Quitamos created_at porque ya no filtramos por fecha
+    q = sb.table("jobs_clean").select("id, sueldo, rol_busqueda")
 
-    # Filtros
+    # Solo filtro semántico (IA)
     q = _aplicar_filtro_semantico(q, rol)
-    q = _aplicar_filtro_fecha(q, fecha_desde, fecha_hasta) # ✅ Fecha agregada
 
     r = q.execute()
     rows = r.data or []
@@ -98,18 +85,11 @@ def get_estadisticas_mercado(
     }
 
 
-def get_tecnologias_demandadas(
-    limit: int = 10, 
-    rol: str | None = None,
-    fecha_desde: str | None = None, # 🆕 Agregado
-    fecha_hasta: str | None = None  # 🆕 Agregado
-) -> list[dict]:
+def get_tecnologias_demandadas(limit: int = 10, rol: str | None = None) -> list[dict]:
     sb = get_supabase()
-    q = sb.table("jobs_clean").select("habilidades, rol_busqueda, created_at") # Traemos created_at
+    q = sb.table("jobs_clean").select("habilidades, rol_busqueda")
     
-    # Filtros
     q = _aplicar_filtro_semantico(q, rol)
-    q = _aplicar_filtro_fecha(q, fecha_desde, fecha_hasta) # ✅ AHORA SÍ FILTRA FECHA
 
     r = q.execute()
     rows = r.data or []
@@ -140,17 +120,11 @@ def get_tecnologias_demandadas(
     return out
 
 
-def get_distribucion_seniority(
-    rol: str | None = None,
-    fecha_desde: str | None = None, # 🆕 Agregado
-    fecha_hasta: str | None = None  # 🆕 Agregado
-) -> dict:
+def get_distribucion_seniority(rol: str | None = None) -> dict:
     sb = get_supabase()
-    q = sb.table("jobs_clean").select("seniority, rol_busqueda, created_at") # Traemos created_at
+    q = sb.table("jobs_clean").select("seniority, rol_busqueda")
     
-    # Filtros
     q = _aplicar_filtro_semantico(q, rol)
-    q = _aplicar_filtro_fecha(q, fecha_desde, fecha_hasta) # ✅ AHORA SÍ FILTRA FECHA
     
     r = q.execute()
     rows = r.data or []
