@@ -18,7 +18,7 @@ Conecta con Supabase (jobs_clean) y expone API para el frontend.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import ofertas, estadisticas, listas, comparar, analizar_cv, reporte_ia
+from app.routers import ofertas, estadisticas, listas, comparar, analizar_cv, reporte_ia, chat
 
 app = FastAPI(
     title="DevRadar API",
@@ -45,6 +45,7 @@ app.include_router(listas.router, prefix="/api")
 app.include_router(comparar.router, prefix="/api")
 app.include_router(analizar_cv.router, prefix="/api")
 app.include_router(reporte_ia.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
 
 
 @app.get("/")
