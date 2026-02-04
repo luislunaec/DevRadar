@@ -240,7 +240,7 @@ def chat_rag(mensaje: str, session_id: str) -> dict:
 
     try:
         from langchain_groq import ChatGroq
-        from langchain_core.messages import HumanMessage, SystemMessage, AssistantMessage
+        from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
         llm = ChatGroq(
             model="llama-3.3-70b-versatile",
@@ -267,7 +267,7 @@ INSTRUCCIONES:
             if msg.get("role") == "user":
                 mensajes.append(HumanMessage(content=msg.get("content", "")))
             elif msg.get("role") == "assistant":
-                mensajes.append(AssistantMessage(content=msg.get("content", "")))
+                mensajes.append(AIMessage(content=msg.get("content", "")))
 
         # Agregar contexto de ofertas y pregunta actual
         contexto_completo = f"""{contexto_ofertas}

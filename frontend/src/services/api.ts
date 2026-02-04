@@ -105,6 +105,17 @@ export interface ReporteIA {
   }[];
 }
 
+export interface ChatMensaje {
+  mensaje: string;
+  session_id: string;
+}
+
+export interface ChatRespuesta {
+  respuesta: string;
+  ofertas_encontradas: number;
+  rechazada: boolean;
+}
+
 export interface FiltrosOfertas {
   rol?: string;
   locacion?: string;
@@ -147,7 +158,7 @@ export async function getOfertas(filtros: FiltrosOfertas = {}): Promise<{
   total_pages: number;
 }> {
   const params = new URLSearchParams();
-  
+
   Object.entries(filtros).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       if (Array.isArray(value)) {
@@ -300,6 +311,26 @@ export async function generarReporteIA(data: {
     body: JSON.stringify(data),
   });
   if (!response.ok) throw new Error('Error generando reporte');
+  return response.json();
+}
+
+/**
+ * POST /api/chat
+ * Enviar mensaje al chatbot con IA
+ * 
+ * Body:
+ * {
+ *   mensaje: string,
+ *   session_id: string
+ * }
+ */
+export async function enviarMensajeChat(data: ChatMensaje): Promise<ChatRespuesta> {
+  const response = await fetch(`${API_BASE_URL}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Error en el chat');
   return response.json();
 }
 
