@@ -3,17 +3,17 @@ from app.database import get_supabase
 from app.utils import parse_habilidades
 from app.services.ai_service import get_embedding 
 
-# Umbral de similitud. 
+# CONFIGURACIÓN
 SIMILARITY_THRESHOLD = 0.27
+MAX_LIMIT = 5000  # Necesario para que los gráficos analicen una muestra grande
 
 def _aplicar_filtro_semantico(query_builder, rol: str | None):
     """
-    Inyecta filtro vectorial si hay rol, usando HuggingFace embeddings.
+    Inyecta filtro vectorial si hay rol, usando embeddings.
     """
     if not rol:
         return query_builder
 
-    # 1. Vectorizamos el rol
     vector_busqueda = get_embedding(rol)
 
     if not vector_busqueda:
@@ -22,11 +22,10 @@ def _aplicar_filtro_semantico(query_builder, rol: str | None):
 
     sb = get_supabase()
     
-    # 2. RPC a Supabase (match_jobs_ids)
     params = {
         "query_embedding": vector_busqueda,
         "match_threshold": SIMILARITY_THRESHOLD,
-        "match_count": 1000
+        "match_count": MAX_LIMIT
     }
     
     try:
@@ -35,7 +34,6 @@ def _aplicar_filtro_semantico(query_builder, rol: str | None):
         print(f"Error en RPC match_jobs_ids: {e}")
         return query_builder.eq("id", -1)
     
-    # 3. Extraer IDs
     matched_ids = [row['id'] for row in rpc_response.data] if rpc_response.data else []
 
     if not matched_ids:
@@ -46,18 +44,19 @@ def _aplicar_filtro_semantico(query_builder, rol: str | None):
 
 def get_estadisticas_mercado(rol: str | None = None) -> dict:
     sb = get_supabase()
-    # Quitamos created_at porque ya no filtramos por fecha
-    q = sb.table("jobs_clean").select("id, sueldo, rol_busqueda")
+    
+    # count="exact" nos da el número real total, aunque la data venga limitada
+    q = sb.table("jobs_clean").select("id, sueldo, rol_busqueda", count="exact")
 
-    # Solo filtro semántico (IA)
     q = _aplicar_filtro_semantico(q, rol)
 
-    r = q.execute()
+    r = q.limit(MAX_LIMIT).execute()
     rows = r.data or []
 
-    total = len(rows)
+    # Usamos el count real si existe, sino el conteo de filas
+    total_real = r.count if r.count is not None else len(rows)
+    
     sueldos = []
-
     for x in rows:
         v = x.get("sueldo")
         if v is not None and v != "":
@@ -68,15 +67,15 @@ def get_estadisticas_mercado(rol: str | None = None) -> dict:
 
     salario_promedio = (sum(sueldos) / len(sueldos)) if sueldos else 0.0
 
-    if total < 20:
+    if total_real < 20:
         nivel_demanda = "bajo"
-    elif total < 100:
+    elif total_real < 100:
         nivel_demanda = "medio"
     else:
         nivel_demanda = "alto"
 
     return {
-        "total_ofertas": total,
+        "total_ofertas": total_real,
         "ofertas_variacion_porcentaje": 0.0, 
         "salario_promedio": round(salario_promedio, 2),
         "salario_variacion_porcentaje": 0.0,
@@ -91,7 +90,7 @@ def get_tecnologias_demandadas(limit: int = 10, rol: str | None = None) -> list[
     
     q = _aplicar_filtro_semantico(q, rol)
 
-    r = q.execute()
+    r = q.limit(MAX_LIMIT).execute()
     rows = r.data or []
 
     counter: Counter = Counter()
@@ -126,7 +125,7 @@ def get_distribucion_seniority(rol: str | None = None) -> dict:
     
     q = _aplicar_filtro_semantico(q, rol)
     
-    r = q.execute()
+    r = q.limit(MAX_LIMIT).execute()
     rows = r.data or []
 
     senior = 0

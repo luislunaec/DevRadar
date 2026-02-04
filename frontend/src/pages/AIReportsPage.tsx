@@ -4,6 +4,8 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { enviarMensajeChat, type ChatRespuesta } from '@/services/api';
+// 1. IMPORTANTE: Importamos el maquillador de texto
+import ReactMarkdown from 'react-markdown';
 
 const suggestedQueries = [
   '¿Cuáles son los salarios más comunes en Ecuador?',
@@ -12,10 +14,12 @@ const suggestedQueries = [
   'Tendencias de seniority en el mercado',
 ];
 
+// 2. IMPORTANTE: Actualizamos la "forma" del mensaje para incluir las fuentes
 interface Mensaje {
   role: 'user' | 'assistant';
   content: string;
   ofertas_encontradas?: number;
+  fuentes?: { titulo: string; empresa: string; url: string }[];
 }
 
 export default function AIReportsPage() {
@@ -39,31 +43,33 @@ export default function AIReportsPage() {
     if (!query.trim()) return;
 
     const mensajeUsuario = query.trim();
-    setQuery(''); // Limpiar el campo de entrada inmediatamente
+    setQuery(''); 
     setError(null);
 
-    // Agregar mensaje del usuario al historial
+    // Agregar mensaje del usuario
     setMensajes((prev) => [...prev, { role: 'user', content: mensajeUsuario }]);
     setLoading(true);
 
     try {
-      const respuesta: ChatRespuesta = await enviarMensajeChat({
+      // Nota: Asegúrate de que tu type ChatRespuesta en api.ts tenga 'fuentes'
+      // Si te da error aquí, edita services/api.ts y agrega fuentes?: any[]
+      const respuesta: any = await enviarMensajeChat({
         mensaje: mensajeUsuario,
         session_id: sessionId,
       });
 
-      // Agregar respuesta del asistente al historial
+      // 3. IMPORTANTE: Guardamos las fuentes que vienen del backend
       setMensajes((prev) => [
         ...prev,
         {
           role: 'assistant',
           content: respuesta.respuesta,
           ofertas_encontradas: respuesta.ofertas_encontradas,
+          fuentes: respuesta.fuentes, 
         },
       ]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error en el chat');
-      // Si hay error, remover el mensaje del usuario que acabamos de agregar
       setMensajes((prev) => prev.slice(0, -1));
     } finally {
       setLoading(false);
@@ -115,19 +121,52 @@ export default function AIReportsPage() {
                   <Sparkles className="h-5 w-5 text-primary-foreground" />
                 </div>
               )}
+              
               <div
-                className={`glass-card p-4 max-w-[70%] ${mensaje.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-card'
-                  }`}
+                className={`glass-card p-4 max-w-[85%] ${mensaje.role === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-card'
+                }`}
               >
-                <p className="text-sm whitespace-pre-wrap">{mensaje.content}</p>
-                {mensaje.role === 'assistant' && mensaje.ofertas_encontradas !== undefined && mensaje.ofertas_encontradas > 0 && (
+                {/* 4. IMPORTANTE: Aquí renderizamos el Markdown bonito */}
+                {mensaje.role === 'assistant' ? (
+                   <div className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-headings:text-blue-400 prose-headings:my-2 prose-strong:text-purple-400 prose-li:my-0">
+                     <ReactMarkdown>{mensaje.content}</ReactMarkdown>
+                   </div>
+                ) : (
+                   <p className="text-sm whitespace-pre-wrap">{mensaje.content}</p>
+                )}
+
+                {/* 5. IMPORTANTE: Aquí pintamos los botones de las fuentes */}
+                {mensaje.role === 'assistant' && mensaje.fuentes && mensaje.fuentes.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-gray-700/50">
+                    <p className="text-xs text-gray-400 mb-2 font-semibold">Ofertas analizadas:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {mensaje.fuentes.map((fuente, idx) => (
+                        <a 
+                          key={idx}
+                          href={fuente.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 px-3 py-2 rounded-lg transition-colors text-xs text-blue-300 hover:text-blue-200 no-underline"
+                        >
+                          <span className="font-bold">💼 {fuente.empresa || "Empresa"}</span>
+                          <span className="opacity-70">| {fuente.titulo}</span>
+                          <span className="ml-1">↗</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Contador de ofertas (texto pequeño) */}
+                {mensaje.role === 'assistant' && mensaje.ofertas_encontradas !== undefined && mensaje.ofertas_encontradas > 0 && !mensaje.fuentes && (
                   <p className="text-xs text-muted-foreground mt-2 italic">
                     {mensaje.ofertas_encontradas} ofertas relevantes encontradas
                   </p>
                 )}
               </div>
+
               {mensaje.role === 'user' && (
                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                   <User className="h-5 w-5 text-primary" />
@@ -142,7 +181,7 @@ export default function AIReportsPage() {
                 <Sparkles className="h-5 w-5 text-primary-foreground animate-pulse" />
               </div>
               <div className="glass-card p-4 bg-card">
-                <p className="text-sm text-muted-foreground">Pensando...</p>
+                <p className="text-sm text-muted-foreground">Analizando mercado...</p>
               </div>
             </div>
           )}
@@ -156,9 +195,9 @@ export default function AIReportsPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Suggested Queries (solo mostrar si no hay mensajes) */}
+        {/* Suggested Queries */}
         {mensajes.length === 0 && (
-          <div className="max-w-4xl mx-auto w-full mb-4">
+          <div className="max-w-4xl mx-auto w-full mb-4 px-4">
             <div className="flex flex-wrap gap-2 justify-center">
               {suggestedQueries.map((suggestion) => (
                 <Button
@@ -176,12 +215,12 @@ export default function AIReportsPage() {
         )}
 
         {/* Input Area */}
-        <div className="max-w-4xl mx-auto w-full">
+        <div className="max-w-4xl mx-auto w-full px-4">
           <form onSubmit={handleSubmit} className="glass-card p-4">
             <div className="flex items-center gap-3">
               <Input
                 type="text"
-                placeholder="Escribe tu pregunta aquí..."
+                placeholder="Escribe tu pregunta aquí... (ej: Salarios de Java en Quito)"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 bg-transparent border-0 focus-visible:ring-0 text-base"
@@ -193,9 +232,7 @@ export default function AIReportsPage() {
             </div>
           </form>
 
-          <p className="text-center text-xs text-muted-foreground mt-3">
-            IA ENTRENADA CON DATOS DEL MERCADO IT ECUATORIANO 2024
-          </p>
+          
         </div>
       </div>
     </Layout>

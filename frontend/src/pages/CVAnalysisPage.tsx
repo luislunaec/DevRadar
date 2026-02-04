@@ -194,9 +194,7 @@ export default function CVAnalysisPage() {
       <footer className="border-t border-border mt-12">
         <div className="container py-6">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              © 2024 DevRadar Ecuador - Impulsado por IA
-            </p>
+
             <div className="flex gap-6">
               <a href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                 Privacidad
