@@ -2,9 +2,16 @@
 Comparación de tecnologías A y B con consultas SQL sobre habilidades.
 Equivalente a: SELECT COUNT(*), AVG(sueldo) FROM jobs_clean WHERE habilidades ILIKE '%tecnologia%'
 Veredicto y cosas buenas generados por el LLM según estos datos.
+Tendencia histórica: conteo real por mes usando fecha_publicacion (solo meses con datos).
 """
+from collections import defaultdict
+from datetime import datetime, timezone, timedelta
 from app.database import get_supabase
+from app.utils import parse_fecha_publicacion
 from app.llm import generar_veredicto_comparacion
+
+MESES_ABREV = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"]
+MAX_MESES_TENDENCIA = 12
 
 
 def _contar_y_promedio_sueldo_por_habilidad(sb, tecnologia: str) -> tuple[int, float]:
@@ -27,6 +34,56 @@ def _contar_y_promedio_sueldo_por_habilidad(sb, tecnologia: str) -> tuple[int, f
                 pass
     salario_promedio = round(sum(sueldos) / len(sueldos), 2) if sueldos else 0.0
     return count, salario_promedio
+
+
+def _tendencia_historica_real(sb, tecnologia_a: str, tecnologia_b: str, periodo_meses: int) -> list[dict]:
+    """
+    Construye tendencia_historica con conteo por mes usando el mismo ILIKE que vacantes_activas.
+    Consulta la BD con .ilike("habilidades", "%tecnologia%") para cada habilidad y agrupa por mes
+    según fecha_publicacion, así el criterio de conteo concuerda exactamente con el número de vacantes.
+    """
+    ahora = datetime.now(timezone.utc)
+    desde = ahora - timedelta(days=periodo_meses * 31)
+    patron_a = f"%{(tecnologia_a or '').strip()}%" if (tecnologia_a or "").strip() else "%"
+    patron_b = f"%{(tecnologia_b or '').strip()}%" if (tecnologia_b or "").strip() else "%"
+
+    # Mismo ILIKE que _contar_y_promedio_sueldo_por_habilidad: conteo con LIKE en la BD
+    r_a = sb.table("jobs_clean").select("fecha_publicacion").ilike("habilidades", patron_a).execute()
+    r_b = sb.table("jobs_clean").select("fecha_publicacion").ilike("habilidades", patron_b).execute()
+    rows_a = r_a.data or []
+    rows_b = r_b.data or []
+
+    # (year, month) -> (count_a, count_b)
+    por_mes: dict[tuple[int, int], tuple[int, int]] = defaultdict(lambda: (0, 0))
+
+    for row in rows_a:
+        fp = parse_fecha_publicacion(row.get("fecha_publicacion"))
+        if fp is None or fp < desde or fp > ahora:
+            continue
+        key = (fp.year, fp.month)
+        ca, cb = por_mes[key]
+        por_mes[key] = (ca + 1, cb)
+
+    for row in rows_b:
+        fp = parse_fecha_publicacion(row.get("fecha_publicacion"))
+        if fp is None or fp < desde or fp > ahora:
+            continue
+        key = (fp.year, fp.month)
+        ca, cb = por_mes[key]
+        por_mes[key] = (ca, cb + 1)
+
+    if not por_mes:
+        return []
+
+    ordenados = sorted(por_mes.keys())
+    return [
+        {
+            "mes": f"{MESES_ABREV[ym[1] - 1]} {ym[0]}",
+            "valor_a": por_mes[ym][0],
+            "valor_b": por_mes[ym][1],
+        }
+        for ym in ordenados
+    ]
 
 
 def comparar_tecnologias(
@@ -67,16 +124,9 @@ def comparar_tecnologias(
         cuota_b=cuota_b,
     )
 
-    meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"]
-    n = min(periodo_meses, 12)
-    tendencia = [
-        {
-            "mes": meses[i],
-            "valor_a": int(count_a * (0.9 + i / n * 0.2)) if count_a else 0,
-            "valor_b": int(count_b * (0.9 + i / n * 0.2)) if count_b else 0,
-        }
-        for i in range(n)
-    ]
+    tendencia = _tendencia_historica_real(
+        sb, tecnologia_a, tecnologia_b, min(periodo_meses, MAX_MESES_TENDENCIA)
+    )
 
     return {
         "tecnologia_a": {
