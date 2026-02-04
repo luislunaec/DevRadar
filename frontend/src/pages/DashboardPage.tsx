@@ -92,10 +92,10 @@ export default function DashboardPage() {
 
   const seniorityPieData = seniority
     ? [
-        { name: 'Senior', value: seniority.senior, color: COLORS_SENIORITY[0] },
-        { name: 'Semi-Senior', value: seniority.semi_senior, color: COLORS_SENIORITY[1] },
-        { name: 'Junior', value: seniority.junior, color: COLORS_SENIORITY[2] },
-      ]
+      { name: 'Senior', value: seniority.senior, color: COLORS_SENIORITY[0] },
+      { name: 'Semi-Senior', value: seniority.semi_senior, color: COLORS_SENIORITY[1] },
+      { name: 'Junior', value: seniority.junior, color: COLORS_SENIORITY[2] },
+    ]
     : [];
 
   const nivelDemandaLabel =
@@ -117,32 +117,6 @@ export default function DashboardPage() {
 
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-h1">Análisis de Mercado</h1>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-success">Datos: {dateRangeLabel}</span>
-              <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Filtrar fecha
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-2" align="end">
-                  <div className="grid gap-1">
-                    {PRESETS.map((preset) => (
-                      <Button
-                        key={preset.key}
-                        variant="ghost"
-                        size="sm"
-                        className="justify-start font-normal"
-                        onClick={() => applyDateFilter(preset.key)}
-                      >
-                        {preset.label}
-                      </Button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
           </div>
 
           {error && (
