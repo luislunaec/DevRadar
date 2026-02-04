@@ -16,11 +16,23 @@ MAX_MESES_TENDENCIA = 12
 
 def _contar_y_promedio_sueldo_por_habilidad(sb, tecnologia: str) -> tuple[int, float]:
     """
-    Número exacto de vacantes activas donde habilidades contiene la tecnología (ILIKE).
-    Equivalente SQL: SELECT count(*), avg(sueldo) FROM jobs_clean WHERE habilidades ILIKE '%tecnologia%'
+    Número exacto de vacantes activas.
+    LOGICA HÍBRIDA (ADAPTADA A TU BASE DE DATOS):
+    - Si buscamos un ROL (Frontend, Backend...), buscamos en 'descripcion' (porque no tienes columna 'titulo').
+    - Si buscamos una TECNOLOGÍA (React, Java...), buscamos en 'habilidades'.
     """
-    patron = f"%{tecnologia.strip()}%" if tecnologia else "%"
-    r = sb.table("jobs_clean").select("sueldo").ilike("habilidades", patron).execute()
+    termino = tecnologia.strip()
+    patron = f"%{termino}%" if termino else "%"
+    
+    # Lista de palabras que identificamos como ROLES
+    roles_comunes = ["frontend", "backend", "fullstack", "devops", "qa", "data scientist", "mobile", "developer", "ingeniero"]
+    
+    # --- CAMBIO CLAVE AQUÍ ---
+    # Como no existe la columna 'titulo', usamos 'descripcion' como el mejor sustituto.
+    columna_busqueda = "descripcion" if termino.lower() in roles_comunes else "habilidades"
+
+    # Hacemos la query sobre la columna que SÍ existe
+    r = sb.table("jobs_clean").select("sueldo").ilike(columna_busqueda, patron).execute()
     rows = r.data or []
 
     count = len(rows)
@@ -29,9 +41,13 @@ def _contar_y_promedio_sueldo_por_habilidad(sb, tecnologia: str) -> tuple[int, f
         s = row.get("sueldo")
         if s is not None and s != "":
             try:
-                sueldos.append(float(s))
+                # Limpieza de moneda
+                val = float(str(s).replace("$", "").replace(",", ""))
+                if val > 0: 
+                    sueldos.append(val)
             except (TypeError, ValueError):
                 pass
+    
     salario_promedio = round(sum(sueldos) / len(sueldos), 2) if sueldos else 0.0
     return count, salario_promedio
 

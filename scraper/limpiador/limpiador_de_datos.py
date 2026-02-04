@@ -73,7 +73,7 @@ class JobAnalysis(BaseModel):
         description="True si es un trabajo de tecnología (Desarrollo, Data, QA, DevOps, Producto). False si es chofer, ventas, medicina, etc."
     )
     skills: List[str] = Field(
-        description="Lista de habilidades técnicas encontradas (ej: Python, React, AWS, SQL, Inglés). Normalizadas a mayúsculas."
+        description="Lista de habilidades técnicas encontradas (ej: Python, React, AWS, SQL). Normalizadas a mayúsculas."
     )
     seniority: str = Field(
         description="Nivel de experiencia: Trainee, Junior, Semi-Senior, Senior, Lead, o 'No especificado'."
