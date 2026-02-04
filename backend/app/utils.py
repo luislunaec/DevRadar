@@ -2,6 +2,23 @@
 Utilidades para mapear filas de jobs_clean al formato API.
 """
 from typing import Any
+import io
+
+
+def extraer_texto_archivo(contenido: bytes, filename: str) -> str:
+    """
+    Extrae texto de PDF o DOCX según extensión del archivo.
+    """
+    name_lower = (filename or "").lower()
+    if name_lower.endswith(".pdf"):
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(contenido))
+        return " ".join(page.extract_text() or "" for page in reader.pages)
+    if name_lower.endswith(".docx"):
+        from docx import Document
+        doc = Document(io.BytesIO(contenido))
+        return " ".join(p.text for p in doc.paragraphs)
+    raise ValueError("Solo se soportan archivos PDF y DOCX")
 
 
 def parse_habilidades(h: Any) -> list[str]:
