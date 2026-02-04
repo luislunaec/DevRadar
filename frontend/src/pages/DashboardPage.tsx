@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Calendar, BarChart3, FileText, Sparkles, Home } from 'lucide-react';
+import { subDays, subMonths, format } from 'date-fns';
 import { Layout } from '@/components/Layout';
 import { StatCard } from '@/components/StatCard';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Button } from '@/components/ui/button';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   getEstadisticasMercado,
   getTecnologiasDemandadas,
@@ -17,10 +23,32 @@ import {
 
 const COLORS_SENIORITY = ['hsl(217, 92%, 62%)', 'hsl(263, 70%, 66%)', 'hsl(168, 76%, 40%)'];
 
+type DatePresetKey = '7d' | '1m' | '3m' | 'todo';
+
+const PRESETS: { key: DatePresetKey; label: string }[] = [
+  { key: '7d', label: 'Últimos 7 días' },
+  { key: '1m', label: 'Último mes' },
+  { key: '3m', label: 'Últimos 3 meses' },
+  { key: 'todo', label: 'Todo' },
+];
+
+function getPresetDates(key: DatePresetKey): { fechaDesde: string | null; fechaHasta: string | null } {
+  if (key === 'todo') return { fechaDesde: null, fechaHasta: null };
+  const now = new Date();
+  const today = format(now, 'yyyy-MM-dd');
+  if (key === '7d') return { fechaDesde: format(subDays(now, 7), 'yyyy-MM-dd'), fechaHasta: today };
+  if (key === '1m') return { fechaDesde: format(subMonths(now, 1), 'yyyy-MM-dd'), fechaHasta: today };
+  if (key === '3m') return { fechaDesde: format(subMonths(now, 3), 'yyyy-MM-dd'), fechaHasta: today };
+  return { fechaDesde: null, fechaHasta: null };
+}
+
 export default function DashboardPage() {
   const [searchParams] = useSearchParams();
   const rol = searchParams.get('rol') || '';
-  const [dateRange, setDateRange] = useState('Últimos datos');
+  const [dateRangeLabel, setDateRangeLabel] = useState('Todo');
+  const [fechaDesde, setFechaDesde] = useState<string | null>(null);
+  const [fechaHasta, setFechaHasta] = useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const [stats, setStats] = useState<EstadisticasMercado | null>(null);
   const [tecnologias, setTecnologias] = useState<TecnologiaDemanda[]>([]);
@@ -28,12 +56,26 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const applyDateFilter = (key: DatePresetKey) => {
+    const preset = PRESETS.find((p) => p.key === key);
+    if (!preset) return;
+    const { fechaDesde: fd, fechaHasta: fh } = getPresetDates(key);
+    setFechaDesde(fd);
+    setFechaHasta(fh);
+    setDateRangeLabel(preset.label);
+    setFilterOpen(false);
+  };
+
   useEffect(() => {
     const rolParam = rol || undefined;
     setLoading(true);
     setError(null);
     Promise.all([
-      getEstadisticasMercado({ rol: rolParam }).catch((e) => {
+      getEstadisticasMercado({
+        rol: rolParam,
+        fecha_desde: fechaDesde ?? undefined,
+        fecha_hasta: fechaHasta ?? undefined,
+      }).catch((e) => {
         setError(e instanceof Error ? e.message : 'Error cargando estadísticas');
         return null;
       }),
@@ -46,7 +88,7 @@ export default function DashboardPage() {
         if (sr) setSeniority(sr);
       })
       .finally(() => setLoading(false));
-  }, [rol]);
+  }, [rol, fechaDesde, fechaHasta]);
 
   const seniorityPieData = seniority
     ? [
@@ -76,11 +118,30 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-h1">Análisis de Mercado</h1>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-success">Datos: {dateRange}</span>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Calendar className="h-4 w-4" />
-                Filtrar fecha
-              </Button>
+              <span className="text-sm text-success">Datos: {dateRangeLabel}</span>
+              <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Filtrar fecha
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2" align="end">
+                  <div className="grid gap-1">
+                    {PRESETS.map((preset) => (
+                      <Button
+                        key={preset.key}
+                        variant="ghost"
+                        size="sm"
+                        className="justify-start font-normal"
+                        onClick={() => applyDateFilter(preset.key)}
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 

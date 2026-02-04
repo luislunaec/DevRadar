@@ -1,10 +1,54 @@
+import re
+from datetime import datetime, timezone
 from collections import Counter
 from app.database import get_supabase
 from app.utils import parse_habilidades
-from app.services.ai_service import get_embedding 
+from app.services.ai_service import get_embedding
 
-# Umbral de similitud. 
+# Umbral de similitud.
 SIMILARITY_THRESHOLD = 0.27
+
+
+def _parse_fecha_publicacion(texto: str | None) -> datetime | None:
+    """Intenta extraer una fecha de fecha_publicacion (TEXT). Retorna None si no se puede."""
+    if not texto or not isinstance(texto, str):
+        return None
+    texto = texto.strip()
+    # Formato ISO o yyyy-MM-dd
+    m = re.match(r"(\d{4})-(\d{2})-(\d{2})", texto)
+    if m:
+        try:
+            return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), tzinfo=timezone.utc)
+        except ValueError:
+            pass
+    # Formato dd/mm/yyyy o dd-mm-yyyy
+    m = re.match(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", texto)
+    if m:
+        try:
+            return datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)), tzinfo=timezone.utc)
+        except ValueError:
+            pass
+    return None
+
+
+def _fechas_iso_rango(fecha_desde: str | None, fecha_hasta: str | None) -> tuple[str | None, str | None]:
+    """Convierte a ISO completo para PostgREST (UTC). Acepta yyyy-MM-dd o ISO con hora (ej. 24h)."""
+    if not fecha_desde and not fecha_hasta:
+        return None, None
+    desde_iso = None
+    hasta_iso = None
+    if fecha_desde:
+        if "T" in fecha_desde:
+            desde_iso = fecha_desde.rstrip("Z") + "Z" if not fecha_desde.endswith("Z") else fecha_desde
+        else:
+            desde_iso = f"{fecha_desde}T00:00:00.000Z"
+    if fecha_hasta:
+        if "T" in fecha_hasta:
+            hasta_iso = fecha_hasta.rstrip("Z") + "Z" if not fecha_hasta.endswith("Z") else fecha_hasta
+        else:
+            hasta_iso = f"{fecha_hasta}T23:59:59.999Z"
+    return desde_iso, hasta_iso
+
 
 def _aplicar_filtro_semantico(query_builder, rol: str | None):
     """
@@ -54,18 +98,41 @@ def get_estadisticas_mercado(
     fecha_hasta: str | None = None,
 ) -> dict:
     sb = get_supabase()
+    # Fechas en ISO completo para PostgREST (UTC), así el rango es correcto
+    desde_iso, hasta_iso = _fechas_iso_rango(fecha_desde, fecha_hasta)
+
     q = sb.table("jobs_clean").select("id, sueldo, created_at, rol_busqueda")
 
-    # Filtro inteligente
+    # Filtro por rol (semántico si hay rol)
     q = _aplicar_filtro_semantico(q, rol)
 
-    if fecha_desde:
-        q = q.gte("created_at", fecha_desde)
-    if fecha_hasta:
-        q = q.lte("created_at", fecha_hasta)
+    if desde_iso:
+        q = q.gte("created_at", desde_iso)
+    if hasta_iso:
+        q = q.lte("created_at", hasta_iso)
 
     r = q.execute()
     rows = r.data or []
+
+    # Si hay filtro de fechas y salieron 0, intentar por fecha_publicacion (p. ej. datos cargados en lote)
+    if (desde_iso or hasta_iso) and len(rows) == 0 and fecha_desde and fecha_hasta:
+        q2 = sb.table("jobs_clean").select("id, sueldo, created_at, fecha_publicacion, rol_busqueda")
+        q2 = _aplicar_filtro_semantico(q2, rol)
+        r2 = q2.execute()
+        all_rows = r2.data or []
+        try:
+            desde_dt = datetime(int(fecha_desde[:4]), int(fecha_desde[5:7]), int(fecha_desde[8:10]), 0, 0, 0, tzinfo=timezone.utc)
+            hasta_dt = datetime(int(fecha_hasta[:4]), int(fecha_hasta[5:7]), int(fecha_hasta[8:10]), 23, 59, 59, tzinfo=timezone.utc)
+        except (ValueError, IndexError):
+            desde_dt = hasta_dt = None
+        if desde_dt is not None and hasta_dt is not None:
+            for row in all_rows:
+                fp = _parse_fecha_publicacion(row.get("fecha_publicacion"))
+                if fp is None:
+                    continue
+                if fp < desde_dt or fp > hasta_dt:
+                    continue
+                rows.append(row)
 
     total = len(rows)
     sueldos = []
