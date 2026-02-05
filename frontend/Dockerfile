@@ -2,28 +2,25 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
-COPY frontend/package.json frontend/package-lock.json* ./frontend/
+# VITE_API_URL se inyecta en tiempo de build (Vite lo embebe en el bundle)
+ARG VITE_API_URL=http://localhost:8000/api
+ENV VITE_API_URL=$VITE_API_URL
 
-WORKDIR /app/frontend
-
+COPY package.json package-lock.json* ./
 RUN npm ci
 
-COPY frontend /app/frontend
-
-# Construir versión de producción
+COPY . .
 RUN npm run build
 
-# --- Etapa de runtime: servir estático con Vite preview ---
+# Servir estático con Vite preview
 FROM node:22-alpine AS runtime
 
-WORKDIR /app/frontend
+WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=build /app/frontend /app/frontend
+COPY --from=build /app .
 
 EXPOSE 8080
 
-# VITE_API_URL se pasa desde docker-compose para apuntar al backend
 CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "8080"]
-

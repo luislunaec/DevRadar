@@ -1,0 +1,71 @@
+# Despliegue DevRadar a VPS
+# Se ejecuta al hacer push a main o manualmente desde la pestaña Actions.
+
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Crear .env
+        run: |
+          {
+            echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}"
+            echo "SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}"
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}"
+            echo "REDIS_URL=${{ secrets.REDIS_URL }}"
+            echo "PUBLIC_API_URL=${{ secrets.PUBLIC_API_URL }}"
+          } > .env
+
+      - name: Configurar SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Asegurar directorio en VPS y clonar si es la primera vez
+        env:
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/devradar' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            set -e
+            if [ ! -d '$DEPLOY_PATH' ]; then
+              sudo mkdir -p $(dirname '$DEPLOY_PATH')
+              sudo git clone --depth 1 https://github.com/${{ github.repository }}.git '$DEPLOY_PATH'
+              sudo chown -R ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} '$DEPLOY_PATH'
+            fi
+          "
+
+      - name: Copiar .env al VPS
+        env:
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/devradar' }}
+        run: |
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            .env ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:"$DEPLOY_PATH/.env"
+
+      - name: Desplegar (git pull + docker compose)
+        env:
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/devradar' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            set -e
+            cd '$DEPLOY_PATH'
+            git fetch origin main && git reset --hard origin/main
+            docker compose up -d --build backend frontend
+            docker compose ps
+          "
+
+      - name: Limpiar clave SSH
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

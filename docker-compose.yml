@@ -1,4 +1,5 @@
-version: "3.9"
+# DevRadar - Docker Compose para VPS
+# Levantar: docker compose up -d backend frontend
 
 services:
   backend:
@@ -8,7 +9,7 @@ services:
     env_file:
       - .env
     volumes:
-      # Para que backend pueda leer /app/.env (código ya lo espera en la raíz del proyecto)
+      # Backend y scraper leen .env desde la raíz del proyecto → /app
       - ./.env:/app/.env:ro
     ports:
       - "8000:8000"
@@ -18,9 +19,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    environment:
-      # URL pública del backend en tu VPS
-      - VITE_API_URL=http://217.216.89.228:8000/api
+      args:
+        # URL pública del API (build-time para Vite). En deploy usar PUBLIC_API_URL.
+        VITE_API_URL: ${PUBLIC_API_URL:-http://217.216.89.228:8000/api}
     ports:
       - "8080:8080"
     depends_on:
@@ -34,9 +35,7 @@ services:
     env_file:
       - .env
     volumes:
-      # El helper de Supabase del scraper también espera .env en la raíz del proyecto (/app/.env)
       - ./.env:/app/.env:ro
     working_dir: /app/scraper
-    # Por defecto corre python main.py 2 (últimos 2 días), definido en el Dockerfile
+    # Ejecución manual: docker compose run --rm scraper [días]
     restart: "no"
-
