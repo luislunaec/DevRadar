@@ -4,7 +4,7 @@ API FastAPI que se conecta a Supabase (tabla `jobs_clean`) y sirve datos al fron
 
 ## Variables de entorno
 
-Crea un archivo `.env` en `backend/` con:
+Crea un archivo `.env` en la **raíz del proyecto** (no dentro de `backend/`) con:
 
 - `SUPABASE_URL`: URL del proyecto Supabase (igual que el scraper)
 - `SUPABASE_KEY`: service role key o anon key

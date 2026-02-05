@@ -79,7 +79,7 @@ def parse_habilidades(h: Any) -> list[str]:
 
 
 def row_to_oferta(row: dict) -> dict:
-    """Convierte una fila de jobs_clean al formato OfertaLaboral del frontend."""
+    """Convierte una fila de jobs_clean al formato esperado por el frontend."""
     return {
         "id": str(row.get("id", "")),
         "plataforma": str(row.get("plataforma", "")),

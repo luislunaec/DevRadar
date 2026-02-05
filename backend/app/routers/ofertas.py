@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from app.services.ofertas_service import get_ofertas, get_oferta_by_id
 
 router = APIRouter(prefix="/ofertas", tags=["ofertas"])
@@ -39,6 +39,5 @@ def list_ofertas(
 def oferta_by_id(id: str):
     oferta = get_oferta_by_id(id)
     if oferta is None:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Oferta no encontrada")
     return oferta

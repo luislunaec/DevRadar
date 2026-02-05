@@ -1,19 +1,16 @@
 """
 Servicio de Chat RAG para DevRadar - Versión "Visual & Markdown"
 """
-import os
 import json
-from typing import Optional, List
-from dotenv import load_dotenv
+import os
+from typing import List, Optional
+
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_groq import ChatGroq
+
 from app.database import get_supabase
 from app.embeddings import embed_text
 from app.llm import GROQ_API_KEY
-
-# Importaciones de LangChain
-from langchain_groq import ChatGroq
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-
-load_dotenv()
 
 # Redis (opcional, fallback a memoria)
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")

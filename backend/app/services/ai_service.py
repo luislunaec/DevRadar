@@ -3,13 +3,10 @@ Servicio de IA para el Backend.
 Maneja Embeddings (HuggingFace) y Validaciones Inteligentes (Groq).
 """
 import os
-from dotenv import load_dotenv
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_groq import ChatGroq
-from pydantic import BaseModel, Field
 
-# Cargar variables de entorno (.env)
-load_dotenv()
+from langchain_groq import ChatGroq
+from langchain_huggingface import HuggingFaceEmbeddings
+from pydantic import BaseModel, Field
 
 # ==========================================
 # 1. MODELO DE EMBEDDINGS (HuggingFace)

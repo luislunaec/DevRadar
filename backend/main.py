@@ -1,20 +1,16 @@
-
-# ⬇️ ESTO VA SIEMPRE ARRIBA DE TODO ⬇️
-from dotenv import load_dotenv
-from pathlib import Path
-import os
-
-BASE_DIR = Path(__file__).resolve().parent
-ENV_PATH = BASE_DIR / ".env"
-
-load_dotenv(ENV_PATH)
-
-# DEBUG temporal (luego lo puedes borrar)
-print("SUPABASE_URL:", os.getenv("SUPABASE_URL"))
 """
 DevRadar Backend - FastAPI
+
 Conecta con Supabase (jobs_clean) y expone API para el frontend.
+Carga variables de entorno desde .env en la raíz del proyecto.
 """
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Cargar .env desde la raíz del proyecto (no desde backend/)
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(_PROJECT_ROOT / ".env")
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

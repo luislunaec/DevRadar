@@ -1,12 +1,9 @@
 """
 LLM Groq para veredictos objetivos y validaciones.
-Requiere GROQ_API_KEY en .env.
+Requiere GROQ_API_KEY en .env (cargado desde main.py).
 """
-import os
 import json
-from dotenv import load_dotenv
-
-load_dotenv()
+import os
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
