@@ -5,11 +5,7 @@ from datetime import datetime
 
 # Importar roles seleccionados
 ROLES_GLOBALES = [
-    "desarrollador python", "desarrollador java", "desarrollador .net", 
-    "frontend developer", "mobile developer", "analista de datos", 
-    "data engineer", "especialista ia", "devops", "cloud engineer", 
-    "cybersecurity", "qa automation", "tester software", 
-    "administrador de bases de datos", "arquitecto de software"
+    "desarrollador python"
 ]
 
 def main():
