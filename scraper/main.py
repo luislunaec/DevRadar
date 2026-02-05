@@ -3,23 +3,25 @@ import os
 import time
 from datetime import datetime
 
-# =============================================================================
-# 🛠️ CONFIGURACIÓN DE ROLES (LA LISTA MAESTRA)
-# =============================================================================
+# Importar roles seleccionados
 ROLES_GLOBALES = [
-    # --- DESARROLLO & PROGRAMACIÓN ---
-    "cybersecurity",
+    "desarrollador python", "desarrollador java", "desarrollador .net", 
+    "frontend developer", "mobile developer", "analista de datos", 
+    "data engineer", "especialista ia", "devops", "cloud engineer", 
+    "cybersecurity", "qa automation", "tester software", 
+    "administrador de bases de datos", "arquitecto de software"
 ]
 
-# =============================================================================
-# 🏁 FUNCIÓN PRINCIPAL
-# =============================================================================
 def main():
+    # Parámetro dinámico: python main.py [dias]
+    # Por defecto 2 días para el cron job diario en Contabo
+    scrape_days = int(sys.argv[1]) if len(sys.argv) > 1 else 2
+
     start_time = time.time()
     print("\n" + "█" * 60)
-    print(f"🚀 INICIANDO DEVRADAR - PIPELINE COMPLETO")
+    print(f"🚀 DEVRADAR ECUADOR - PIPELINE AUTOMATIZADO")
     print(f"📅 Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"🔎 Roles a buscar: {len(ROLES_GLOBALES)}")
+    print(f"🔎 Rango: Últimos {scrape_days} días")
     print("█" * 60 + "\n")
 
     # =========================================================
@@ -29,29 +31,27 @@ def main():
 
     # 1. COMPUTRABAJO
     try:
-        from scrapers.scraper_computrabajos import RecolectorComputrabajo
+        from scrapers.scraper_computrabajos import correr_scraper_computrabajo
         print("\n🔹 [1/3] EJECUTANDO COMPUTRABAJO...")
-        bot_ct = RecolectorComputrabajo(ROLES_GLOBALES, scrape_days=60)
-        bot_ct.recolectar()
+        correr_scraper_computrabajo(ROLES_GLOBALES, dias=scrape_days)
     except Exception as e:
-        print(f"❌ Error fatal en Computrabajo: {e}")
+        print(f"❌ Error en Computrabajo: {e}")
 
     # 2. JOOBLE
     try:
-        from scrapers.scraper_jooble import RecolectorJooble
+        from scrapers.scraper_jooble import correr_scraper_jooble
         print("\n🔹 [2/3] EJECUTANDO JOOBLE...")
-        bot_jb = RecolectorJooble(ROLES_GLOBALES, scrape_days=60)
-        bot_jb.recolectar()
+        correr_scraper_jooble(ROLES_GLOBALES, dias=scrape_days)
     except Exception as e:
-        print(f"❌ Error fatal en Jooble: {e}")
+        print(f"❌ Error en Jooble: {e}")
 
     # 3. LINKEDIN
     try:
-        from scrapers.scraper_linkedin import ejecutar as ejecutar_linkedin
+        from scrapers.scraper_linkedin import ejecutar_linkedin
         print("\n🔹 [3/3] EJECUTANDO LINKEDIN...")
-        ejecutar_linkedin(ROLES_GLOBALES, scrape_days=30)
+        ejecutar_linkedin(ROLES_GLOBALES, scrape_days=scrape_days)
     except Exception as e:
-        print(f"❌ Error fatal en LinkedIn: {e}")
+        print(f"❌ Error en LinkedIn: {e}")
 
     # =========================================================
     # FASE 2: LIMPIEZA E INTELIGENCIA ARTIFICIAL
@@ -61,29 +61,16 @@ def main():
     print("=" * 60)
     
     try:
-        # CORREGIDO: Ahora apunta a 'limpiador_de_datos.py' que es el nombre real
+        # Importamos y ejecutamos el limpiador
         from limpiador.limpiador_de_datos import ejecutar_limpieza_ia
-        
-        print("\n🔹 Iniciando limpieza, estandarización y embeddings...")
-        ejecutar_limpieza_ia()
-        
-    except ImportError as e:
-        print(f"⚠️ Error de importación: {e}")
-        print("Revisa que el archivo 'limpiador/limpiador_de_datos.py' exista.")
+        print("\n🔹 Procesando nuevas ofertas detectadas...")
+        ejecutar_limpieza_ia() # Solo limpia donde processed=False
     except Exception as e:
         print(f"❌ Error fatal en el Limpiador IA: {e}")
 
-    # =========================================================
-    # FIN DEL PROCESO
-    # =========================================================
     duration = time.time() - start_time
-    minutes = int(duration // 60)
-    seconds = int(duration % 60)
-    
     print("\n" + "█" * 60)
-    print(f"✅ PIPELINE FINALIZADO CORRECTAMENTE")
-    print(f"⏱️ Tiempo total: {minutes}m {seconds}s")
-    print("💤 Durmiendo hasta la próxima ejecución...")
+    print(f"✅ PIPELINE FINALIZADO EN {int(duration // 60)}m {int(duration % 60)}s")
     print("█" * 60)
 
 if __name__ == "__main__":

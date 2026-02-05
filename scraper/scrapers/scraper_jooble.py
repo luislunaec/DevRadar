@@ -2,22 +2,23 @@ import os
 import sys
 import time
 import pandas as pd
-import random  # <--- ¡¡AGREGA ESTA LÍNEA QUE FALTABA!! 🎲
-from datetime import datetime, timedelta
+import random 
+from datetime import datetime
 import re
-# ... el resto sigue igual
 
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 
-# Permitir imports desde root
+# =============================================================================
+# 🔗 CONFIGURACIÓN DE RUTAS E IMPORTACIONES
+# =============================================================================
 _scraper_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _scraper_root not in sys.path:
     sys.path.insert(0, _scraper_root)
 
 from db.supabase_helper import guardar_oferta_cruda
 
-# Importar pantalla virtual para servidores Linux (VPS)
+# Pantalla virtual para VPS Linux
 try:
     from pyvirtualdisplay import Display
 except ImportError:
@@ -25,168 +26,134 @@ except ImportError:
 
 class RecolectorJooble:
     """
-    Scraper de Jooble estandarizado (Clase).
-    Misma lógica blindada de Selenium, pero estructura compatible con Main.
+    Scraper optimizado con Scroll Humano y selectores de alta resistencia.
+    Evita el error 'no such window' al no saturar el navegador con comandos rápidos.
     """
 
-    def __init__(self, roles, scrape_days: int = 30):
+    def __init__(self, roles, scrape_days: int = 2):
         self.base_url = "https://ec.jooble.org"
         self.roles = roles
-        self.scrape_days = scrape_days
+        self.scrape_days = scrape_days 
         self.datos = []
         self.registros_por_rol = {}
         
-        # Configuración Chrome
         self.options = uc.ChromeOptions()
         self.options.add_argument("--start-maximized")
         self.options.add_argument("--disable-popup-blocking")
         self.options.add_argument("--no-sandbox")
-        # self.options.add_argument("--headless") # ¡OJO! En Jooble a veces headless falla, mejor Xvfb
+        self.options.add_argument("--disable-dev-shm-usage")
+        # User-agent real para mayor estabilidad
+        self.options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
     def _jooble_date_param(self) -> str | None:
-        """
-        Mapea los días a los parámetros de URL de Jooble.
-        """
-        if self.scrape_days <= 1: return "8" # Últimas 24 horas
-        if self.scrape_days <= 3: return "2" # Últimos 3 días
-        if self.scrape_days <= 7: return "3" # Últimos 7 días
-        return None # Sin parámetro = Cualquier fecha (Histórico completo)
+        if self.scrape_days <= 1: return "8" 
+        if self.scrape_days <= 3: return "2" 
+        if self.scrape_days <= 7: return "3" 
+        return None 
 
-    def extraer_sueldo_numerico(self, texto_tarjeta):
-        if not texto_tarjeta: return None
-        lineas = texto_tarjeta.split('\n')
-        for linea in lineas:
-            l = linea.strip()
-            if ("$" in l or "USD" in l) and any(char.isdigit() for char in l):
-                if len(l) < 50: return l
-        return None
+    def extraer_sueldo_numerico(self, texto):
+        if not texto: return None
+        match = re.search(r'\$?(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)', texto)
+        return match.group(0) if match else None
 
-    def extraer_ubicacion(self, texto_tarjeta):
-        if not texto_tarjeta: return "Ecuador"
-        l = texto_tarjeta.lower()
-        if "quito" in l: return "Quito"
-        if "guayaquil" in l: return "Guayaquil"
-        if "cuenca" in l: return "Cuenca"
-        if "remoto" in l: return "Remoto"
+    def extraer_ubicacion(self, texto):
+        if not texto: return "Ecuador"
+        t = texto.lower()
+        if "quito" in t: return "Quito"
+        if "guayaquil" in t: return "Guayaquil"
+        if "remoto" in t or "teletrabajo" in t: return "Remoto"
         return "Ecuador"
 
     def recolectar(self):
-        print(f"🚀 INICIANDO RECOLECTOR JOOBLE (MAX HISTÓRICO)")
+        print(f"🚀 INICIANDO JOOBLE DIARIO (Mirando {self.scrape_days} días atrás)")
         
-        # --- BLOQUE VPS: PANTALLA FANTASMA (Solo en Linux) ---
         display = None
         if sys.platform.startswith('linux'):
             try:
-                print("🐧 Detectado Linux: Iniciando Pantalla Virtual...")
                 display = Display(visible=0, size=(1920, 1080))
                 display.start()
-            except Exception as e:
-                print(f"⚠️ No se pudo iniciar Xvfb: {e}")
-        # -----------------------------------------------------
+            except: pass
 
         date_param = self._jooble_date_param()
-        
-        # Fix versión 144 / Driver
         driver = None
+        
         try:
-            driver = uc.Chrome(options=self.options, version_main=144)
-        except:
-            print("⚠️ Versión 144 falló, intentando automático...")
+            # Parche de versión 144 para tu Chrome actual
             try:
+                driver = uc.Chrome(options=self.options, version_main=144)
+            except:
                 driver = uc.Chrome(options=self.options)
-            except Exception as e:
-                print(f"❌ Error fatal iniciando Chrome: {e}")
-                if display: display.stop()
-                return
+            
+            driver.set_page_load_timeout(35)
 
-        try:
             for rol in self.roles:
-                print(f"\n🔎 --- BUSCANDO: {rol.upper()} ---")
-                
-                base = "https://ec.jooble.org/SearchResult?"
-                # 'ukw' es la keyword, 'rgns' es la región (Quito por defecto, o quitar para todo Ecuador)
+                print(f"\n🔎 BUSCANDO: {rol.upper()}...")
                 query = f"ukw={rol.replace(' ', '%20')}" 
-                url = f"{base}date={date_param}&{query}" if date_param else f"{base}{query}"
+                url = f"{self.base_url}/SearchResult?date={date_param}&{query}" if date_param else f"{self.base_url}/SearchResult?{query}"
                 
-                driver.get(url)
-                time.sleep(random.uniform(3, 5))
-                
-                contador_rol = 0
-                intentos_sin_nuevos = 0
-                links_vistos = set()
-                
-                # AUMENTADO: Ahora busca hasta 200 por rol (antes 50)
-                while contador_rol < 200:
-                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                    time.sleep(2.5) # Un pelín más lento para dar tiempo a cargar
+                try:
+                    driver.get(url)
+                    time.sleep(random.uniform(5, 8))
                     
-                    # Selectores de Jooble (cambian a veces)
-                    tarjetas = driver.find_elements(By.CSS_SELECTOR, "article")
-                    if not tarjetas: tarjetas = driver.find_elements(By.CSS_SELECTOR, "div[data-test-name='_jobCard']")
+                    links_vistos = set()
+                    contador_rol = 0
                     
-                    nuevos_ciclo = 0
-                    
-                    for tarjeta in tarjetas:
-                        try:
-                            # 1. LINK
+                    # --- SCROLL HUMANO POR TRAMOS ---
+                    # Bajamos de 800 en 800 píxeles para que Jooble no nos tumbe la ventana
+                    for scroll_step in range(1, 6): 
+                        driver.execute_script("window.scrollBy(0, 800);")
+                        time.sleep(random.uniform(2.5, 4.0)) 
+                        
+                        # Selectores basados en data-test-name identificados en inspección
+                        tarjetas = driver.find_elements(By.CSS_SELECTOR, 'article, [data-test-name="_jobCard"]')
+
+                        for tarjeta in tarjetas:
                             try:
-                                elem_link = tarjeta.find_element(By.TAG_NAME, "a")
-                                link = elem_link.get_attribute("href")
-                            except: continue
+                                # 1. LINK por atributo de test
+                                try:
+                                    elem_link = tarjeta.find_element(By.CSS_SELECTOR, "a[data-test-name='_jobCardLink']")
+                                    link = elem_link.get_attribute("href")
+                                except:
+                                    link = tarjeta.find_element(By.TAG_NAME, "a").get_attribute("href")
 
-                            if not link or link in links_vistos: continue
-                            links_vistos.add(link)
+                                if not link or link in links_vistos: continue
+                                links_vistos.add(link)
 
-                            # 2. TÍTULO
-                            titulo = "Sin Título"
-                            try: titulo = tarjeta.find_element(By.TAG_NAME, "h2").text
-                            except: pass
-                            
-                            titulo = titulo.replace("\n", " ").strip() if titulo else "Sin Título"
+                                # 2. TÍTULO (Ignorando clases dinámicas como x5dWY-h2)
+                                try:
+                                    titulo = tarjeta.find_element(By.CSS_SELECTOR, "[data-test-name='_jobCardTitle']").text
+                                except:
+                                    titulo = "Oferta Tech"
 
-                            # 3. TEXTO
-                            texto_full = tarjeta.get_attribute("innerText")
-                            if not texto_full or len(texto_full) < 10:
                                 texto_full = tarjeta.text
 
-                            # Extracciones
-                            sueldo_detectado = self.extraer_sueldo_numerico(texto_full)
-                            locacion_detectada = self.extraer_ubicacion(texto_full)
-                            
-                            # Guardar en memoria
-                            self.datos.append({
-                                'plataforma': 'jooble',
-                                'rol_busqueda': rol,
-                                'fecha_publicacion': datetime.now().strftime('%Y-%m-%d %H:%M:%S'), # Jooble no da fecha exacta fácil
-                                'oferta_laboral': titulo,
-                                'locacion': locacion_detectada,
-                                'descripcion': texto_full,
-                                'sueldo': sueldo_detectado,
-                                'compania': 'Confidencial',
-                                'url_publicacion': link
-                            })
+                                # 3. COMPAÑÍA
+                                try:
+                                    compania = tarjeta.find_element(By.CSS_SELECTOR, "[data-test-name='_jobCardCompanyName']").text
+                                except:
+                                    compania = "Confidencial"
 
-                            contador_rol += 1
-                            nuevos_ciclo += 1
-                            if nuevos_ciclo % 10 == 0:
-                                print(f"   ⚡ {contador_rol} ofertas recolectadas...")
-
-                        except: continue
-                    
-                    # Si no aparecen nuevos tras scroll, intentamos 3 veces y salimos
-                    if nuevos_ciclo == 0:
-                        intentos_sin_nuevos += 1
-                        if intentos_sin_nuevos >= 3: 
-                            print("   🚫 No cargan más ofertas. Fin del rol.")
-                            break
-                    else:
-                        intentos_sin_nuevos = 0
+                                self.datos.append({
+                                    'plataforma': 'jooble',
+                                    'rol_busqueda': rol,
+                                    'fecha_publicacion': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                    'oferta_laboral': titulo.strip(),
+                                    'locacion': self.extraer_ubicacion(texto_full),
+                                    'descripcion': texto_full,
+                                    'sueldo': self.extraer_sueldo_numerico(texto_full),
+                                    'compania': compania,
+                                    'url_publicacion': link
+                                })
+                                contador_rol += 1
+                                
+                            except: continue
+                except Exception as e:
+                    print(f"⚠️ Error cargando rol {rol}: {e}")
+                    continue
 
                 self.registros_por_rol[rol] = contador_rol
-                print(f"   🏆 Total '{rol}': {contador_rol}")
+                print(f"   ✅ Encontradas {contador_rol} ofertas.")
 
-        except Exception as e:
-            print(f"❌ Error crítico en recolección: {e}")
         finally:
             if driver:
                 try: driver.quit()
@@ -194,43 +161,18 @@ class RecolectorJooble:
             if display:
                 try: display.stop()
                 except: pass
-            
-            # Guardar al final
             self.guardar_supabase()
 
     def guardar_supabase(self):
-        """Guarda todo lo recolectado de una sola vez al final"""
-        if not self.datos: 
-            print("\n⚠️ No se recolectaron datos para guardar.")
-            return
-
-        df = pd.DataFrame(self.datos)
-        # Limpiar duplicados de URL
-        df.drop_duplicates(subset=['url_publicacion'], inplace=True)
-        print(f"\n💾 Guardando {len(df)} ofertas únicas en Supabase (jobs_raw)...")
-
+        if not self.datos: return
+        df = pd.DataFrame(self.datos).drop_duplicates(subset=['url_publicacion'])
+        
         exitos = 0
-        errores = 0
         for _, row in df.iterrows():
-            datos_fila = row.to_dict()
-            # Validar que sueldo sea None si no existe (Supabase no acepta NaN de pandas)
-            if pd.isna(datos_fila.get('sueldo')): datos_fila['sueldo'] = None
-            
-            if guardar_oferta_cruda(datos_fila):
+            if guardar_oferta_cruda(row.to_dict()):
                 exitos += 1
-            else:
-                errores += 1
-            time.sleep(0.01) # Micro pausa
-            
-        print(f"✅ FINALIZADO: {exitos} guardados. ({errores} errores).")
+        print(f"✅ JOOBLE: {exitos} registros en jobs_raw.")
 
-# =============================================================================
-# 🏁 EJECUCIÓN MANUAL (PRUEBAS)
-# =============================================================================
-if __name__ == "__main__":
-    # Roles de prueba locales
-    ROLES_TEST = ["programador", "analista de datos"]
-    
-    # 60 días = Sin filtro de fecha (trae todo)
-    bot = RecolectorJooble(ROLES_TEST, scrape_days=60)
+def correr_scraper_jooble(roles, dias=2):
+    bot = RecolectorJooble(roles, scrape_days=dias)
     bot.recolectar()

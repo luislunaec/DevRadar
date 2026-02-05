@@ -259,25 +259,28 @@ def ejecutar_limpieza_ia():
         # para que en la siguiente vuelta del While NO las vuelva a traer.
         urls_lote = [item.get("url_publicacion") for item in data_final if item.get("url_publicacion")]
         
+        # --- MARCADO FINAL (SÚPER SEGURO) ---
         if urls_lote:
-            # Actualizamos en bloques de 100 para no romper la URL request
-            chunk_size = 100
+            chunk_size = 25 # Bajamos a 25 para evitar el Bad Request por URL larga
             for k in range(0, len(urls_lote), chunk_size):
                 chunk_urls = urls_lote[k:k + chunk_size]
                 try:
+                    # Usamos UTC para el timestamp
                     now_utc = datetime.now(timezone.utc).isoformat()
                     supabase.table('jobs_raw').update({
                         'processed': True,
                         'processed_at': now_utc
                     }).in_('url_publicacion', chunk_urls).execute()
+                    print(f"   ✅ Marcados {len(chunk_urls)} como procesados.")
                 except Exception as e:
-                    print(f"⚠️ Error actualizando estado processed: {e}")
-
-            print(f"✅ Lote #{ciclo} terminado. {len(urls_lote)} registros marcados como procesados.")
+                    print(f"   ⚠️ Error grave marcando procesados: {e}")
             total_procesados_global += len(urls_lote)
         
         ciclo += 1
         # Fin del While, vuelve arriba a cargar los siguientes 1000
+    
+
+
     
     print("\n" + "="*60)
     print(f"🏁 PROCESO TOTAL FINALIZADO. {total_procesados_global} ofertas procesadas hoy.")
