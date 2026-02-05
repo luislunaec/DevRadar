@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      # Para que backend pueda leer /app/.env (código ya lo espera en la raíz del proyecto)
+      - ./.env:/app/.env:ro
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      # URL pública del backend en tu VPS
+      - VITE_API_URL=http://217.216.89.228:8000/api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  scraper:
+    build:
+      context: ./scraper
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      # El helper de Supabase del scraper también espera .env en la raíz del proyecto (/app/.env)
+      - ./.env:/app/.env:ro
+    working_dir: /app/scraper
+    # Por defecto corre python main.py 2 (últimos 2 días), definido en el Dockerfile
+    restart: "no"
+
