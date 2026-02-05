@@ -1,21 +1,23 @@
 """
-Clase para testear la conexión a Supabase
+Clase para testear la conexión a Supabase.
+Carga .env desde la raíz del proyecto (supabase_helper también lo hace al importarse).
 """
-import os
 import sys
-
-# Permitir ejecutar directamente desde db/ o como módulo
-if __name__ == "__main__":
-    _scraper_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if _scraper_root not in sys.path:
-        sys.path.insert(0, _scraper_root)
-    from db.supabase_helper import supabase
-else:
-    from .supabase_helper import supabase
+from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# Cargar .env desde la raíz del proyecto
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_PROJECT_ROOT / ".env")
+
+if __name__ == "__main__":
+    _scraper_root = _PROJECT_ROOT / "scraper"
+    if str(_scraper_root) not in sys.path:
+        sys.path.insert(0, str(_scraper_root))
+    from db.supabase_helper import supabase
+else:
+    from .supabase_helper import supabase
 
 class TestSupabase:
     """Clase para probar la conexión y operaciones con Supabase"""
@@ -99,18 +101,18 @@ class TestSupabase:
             
             # Leer de jobs_clean
             try:
-                response = self.supabase.table('jobs_clean').select('*').limit(5).execute()
+                response = self.supabase.table("jobs_clean").select("*").limit(5).execute()
                 count = len(response.data) if response.data else 0
                 print(f"✅ Lectura exitosa de jobs_clean: {count} registros encontrados")
-            except:
+            except Exception:
                 print("⚠️ jobs_clean está vacía o no tiene datos")
-            
+
             # Leer de jobs
             try:
-                response = self.supabase.table('jobs').select('*').limit(5).execute()
+                response = self.supabase.table("jobs").select("*").limit(5).execute()
                 count = len(response.data) if response.data else 0
                 print(f"✅ Lectura exitosa de jobs: {count} registros encontrados")
-            except:
+            except Exception:
                 print("⚠️ jobs está vacía o no tiene datos")
             
             return True

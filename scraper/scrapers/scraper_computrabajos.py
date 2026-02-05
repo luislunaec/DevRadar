@@ -171,8 +171,8 @@ class RecolectorComputrabajo:
                 descripcion_str = "\n\n".join(partes)
 
             return fecha, descripcion_str
-        except:
-            return '', ''
+        except Exception:
+            return "", ""
 
     def guardar_supabase(self):
         df = pd.DataFrame(self.datos)

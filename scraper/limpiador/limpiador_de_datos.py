@@ -6,25 +6,23 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 # Permitir imports cuando se ejecuta directamente desde limpiador/
-_scraper_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _scraper_root not in sys.path:
-    sys.path.insert(0, _scraper_root)
+from pathlib import Path
 
+_scraper_root = Path(__file__).resolve().parent.parent
+if str(_scraper_root) not in sys.path:
+    sys.path.insert(0, str(_scraper_root))
+
+_PROJECT_ROOT = _scraper_root.parent
 from dotenv import load_dotenv
+
+load_dotenv(_PROJECT_ROOT / ".env")
+
 from pydantic import BaseModel, Field
 from db.supabase_helper import supabase
-
-# --- LLM: Groq ---
 from langchain_groq import ChatGroq
-
-# --- Embeddings: HuggingFace (local, gratuito, sin otra API key) ---
 from langchain_huggingface import HuggingFaceEmbeddings
-
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
-
-# Cargar variables de entorno
-load_dotenv()
 
 
 def extraer_sueldo_numerico(valor: str | int | float | None) -> Optional[float]:

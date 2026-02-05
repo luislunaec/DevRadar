@@ -34,9 +34,9 @@ class ProcesadorData:
         if pd.isna(valor): return None
         try:
             if isinstance(valor, datetime):
-                 return valor.strftime('%Y-%m-%d %H:%M:%S')
+                return valor.strftime("%Y-%m-%d %H:%M:%S")
             return str(valor)
-        except:
+        except (TypeError, ValueError):
             return str(valor)
 
 def extraer_detalles_completos(url):
@@ -55,7 +55,7 @@ def extraer_detalles_completos(url):
                 resultado["description"] = re.sub(r'[\r\n\t\s]+', ' ', desc_tag.get_text(separator=" ")).strip()
             resultado["salary_extracted"] = DetectorSueldo.extraer_de_texto(soup)
         return resultado
-    except:
+    except Exception:
         return resultado
 
 def ejecutar_linkedin(roles, scrape_days: int = 2): 

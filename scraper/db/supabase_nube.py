@@ -1,23 +1,26 @@
+import json
 import os
 import sys
+import time
+from pathlib import Path
+
 import google.generativeai as genai
 from dotenv import load_dotenv
-import json
-import time
 
-# Permitir ejecutar directamente desde db/ o como módulo
+# .env desde la raíz del proyecto
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_PROJECT_ROOT / ".env")
+
 if __name__ == "__main__":
-    _scraper_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if _scraper_root not in sys.path:
-        sys.path.insert(0, _scraper_root)
+    _scraper_root = _PROJECT_ROOT / "scraper"
+    if str(_scraper_root) not in sys.path:
+        sys.path.insert(0, str(_scraper_root))
     from db.supabase_helper import supabase
 else:
     from .supabase_helper import supabase
 
-# --- 1. CONFIGURACIÓN ---
 print("🚀 Iniciando generación de embeddings y guardado en Supabase...")
 
-load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 if not GOOGLE_API_KEY:
@@ -35,36 +38,20 @@ except Exception as e:
 
 def obtener_embedding(texto):
     """Genera el vector. Si falla, espera y reintenta."""
-    if not texto or len(str(texto)) < 5: return None
+    if not texto or len(str(texto)) < 5:
+        return None
     try:
         result = genai.embed_content(
             model="models/text-embedding-004",
-            content=str(texto)[:9000], # Recortamos por seguridad
+            content=str(texto)[:9000],
             task_type="retrieval_document",
-            title="Oferta Laboral"
+            title="Oferta Laboral",
         )
-        return result['embedding']
+        return result["embedding"]
     except Exception as e:
         print(f"⚠️ Warning Embedding: {e}")
         return None
 
-def extraer_skills_ia(texto_para_analizar):
-    """Intenta sacar skills. Si el texto es basura, devuelve lista vacía."""
-    if not texto_para_analizar or len(str(texto_para_analizar)) < 10: return []
-    
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    prompt = f"""
-    Eres un experto tech. Extrae las habilidades técnicas (Stack tecnológico) de este texto.
-    Devuelve SOLO una lista JSON. Ejemplo: ["Java", "Spring Boot"].
-    
-    Texto: {str(texto_para_analizar)[:2000]}
-    """
-    try:
-        response = model.generate_content(prompt)
-        text = response.text.replace("```json", "").replace("```", "").strip()
-        return json.loads(text)
-    except:
-        return []
 
 # --- 3. EL PROCESO ---
 

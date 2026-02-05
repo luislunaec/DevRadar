@@ -3,9 +3,9 @@ import { Diamond, Send, Sparkles, Bot, User } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { enviarMensajeChat, type ChatRespuesta } from '@/services/api';
-// 1. IMPORTANTE: Importamos el maquillador de texto
 import ReactMarkdown from 'react-markdown';
+
+import { enviarMensajeChat, type ChatRespuesta, type FuenteChat } from '@/services/api';
 
 const suggestedQueries = [
   '¿Cuáles son los salarios más comunes en Ecuador?',
@@ -14,12 +14,11 @@ const suggestedQueries = [
   'Tendencias de seniority en el mercado',
 ];
 
-// 2. IMPORTANTE: Actualizamos la "forma" del mensaje para incluir las fuentes
 interface Mensaje {
   role: 'user' | 'assistant';
   content: string;
   ofertas_encontradas?: number;
-  fuentes?: { titulo: string; empresa: string; url: string }[];
+  fuentes?: FuenteChat[];
 }
 
 export default function AIReportsPage() {
@@ -51,14 +50,11 @@ export default function AIReportsPage() {
     setLoading(true);
 
     try {
-      // Nota: Asegúrate de que tu type ChatRespuesta en api.ts tenga 'fuentes'
-      // Si te da error aquí, edita services/api.ts y agrega fuentes?: any[]
-      const respuesta: any = await enviarMensajeChat({
+      const respuesta: ChatRespuesta = await enviarMensajeChat({
         mensaje: mensajeUsuario,
         session_id: sessionId,
       });
 
-      // 3. IMPORTANTE: Guardamos las fuentes que vienen del backend
       setMensajes((prev) => [
         ...prev,
         {
@@ -128,7 +124,7 @@ export default function AIReportsPage() {
                   : 'bg-card'
                 }`}
               >
-                {/* 4. IMPORTANTE: Aquí renderizamos el Markdown bonito */}
+                {/* Markdown para respuestas del asistente */}
                 {mensaje.role === 'assistant' ? (
                    <div className="prose prose-invert prose-sm max-w-none prose-p:my-1 prose-headings:text-blue-400 prose-headings:my-2 prose-strong:text-purple-400 prose-li:my-0">
                      <ReactMarkdown>{mensaje.content}</ReactMarkdown>
@@ -137,7 +133,7 @@ export default function AIReportsPage() {
                    <p className="text-sm whitespace-pre-wrap">{mensaje.content}</p>
                 )}
 
-                {/* 5. IMPORTANTE: Aquí pintamos los botones de las fuentes */}
+                {/* Enlaces a ofertas analizadas */}
                 {mensaje.role === 'assistant' && mensaje.fuentes && mensaje.fuentes.length > 0 && (
                   <div className="mt-4 pt-3 border-t border-gray-700/50">
                     <p className="text-xs text-gray-400 mb-2 font-semibold">Ofertas analizadas:</p>
@@ -159,7 +155,6 @@ export default function AIReportsPage() {
                   </div>
                 )}
                 
-                {/* Contador de ofertas (texto pequeño) */}
                 {mensaje.role === 'assistant' && mensaje.ofertas_encontradas !== undefined && mensaje.ofertas_encontradas > 0 && !mensaje.fuentes && (
                   <p className="text-xs text-muted-foreground mt-2 italic">
                     {mensaje.ofertas_encontradas} ofertas relevantes encontradas

@@ -1,27 +1,28 @@
 """
-Helper para conexión a Supabase - Producción Blindada
+Helper para conexión a Supabase - Producción Blindada.
+Carga variables desde .env en la raíz del proyecto.
 """
 import os
 import re
+from pathlib import Path
+
 import pandas as pd
-from supabase import create_client, Client
 from dotenv import load_dotenv
+from supabase import create_client, Client
 
-# 1. Cargamos el archivo .env a la memoria de Python
-load_dotenv()
+# Cargar .env desde la raíz del proyecto (no desde scraper/db/)
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_PROJECT_ROOT / ".env")
 
-# 2. El "Recadero": Traemos los valores del .env a variables de Python
-# AQUÍ NO PONEMOS LA URL, la instrucción os.getenv la busca solita
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-# 3. Validación de seguridad
 if not SUPABASE_URL or not SUPABASE_KEY:
     print("❌ ERROR CRÍTICO: No se encontraron SUPABASE_URL o SUPABASE_KEY en el .env")
     print("👉 Revisa que el archivo .env exista en la raíz del proyecto.")
     exit(1)
 
-# 4. Inicializamos el cliente oficial de Supabase
+# Inicializamos el cliente oficial de Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def limpiar_valor_para_supabase(value, campo_tipo='text'):
@@ -41,17 +42,16 @@ def limpiar_valor_para_supabase(value, campo_tipo='text'):
         
         if campo_tipo == 'numeric':
             try:
-                # Extrae solo números y puntos (limpia $, comas de miles, etc.)
                 cleaned = re.sub(r'[^\d.]', '', value_lower.replace(',', '.'))
                 return float(cleaned) if cleaned else None
-            except:
+            except (TypeError, ValueError):
                 return None
         return value
     
     if campo_tipo == 'numeric':
         try:
             return float(value) if not pd.isna(value) else None
-        except:
+        except (TypeError, ValueError):
             return None
     
     return str(value).strip() if value else ''

@@ -72,7 +72,7 @@ class RecolectorJooble:
             try:
                 display = Display(visible=0, size=(1920, 1080))
                 display.start()
-            except: pass
+            except Exception: pass
 
         date_param = self._jooble_date_param()
         driver = None
@@ -81,7 +81,7 @@ class RecolectorJooble:
             # Parche de versión 144 para tu Chrome actual
             try:
                 driver = uc.Chrome(options=self.options, version_main=144)
-            except:
+            except Exception:
                 driver = uc.Chrome(options=self.options)
             
             driver.set_page_load_timeout(35)
@@ -113,7 +113,7 @@ class RecolectorJooble:
                                 try:
                                     elem_link = tarjeta.find_element(By.CSS_SELECTOR, "a[data-test-name='_jobCardLink']")
                                     link = elem_link.get_attribute("href")
-                                except:
+                                except Exception:
                                     link = tarjeta.find_element(By.TAG_NAME, "a").get_attribute("href")
 
                                 if not link or link in links_vistos: continue
@@ -122,7 +122,7 @@ class RecolectorJooble:
                                 # 2. TÍTULO (Ignorando clases dinámicas como x5dWY-h2)
                                 try:
                                     titulo = tarjeta.find_element(By.CSS_SELECTOR, "[data-test-name='_jobCardTitle']").text
-                                except:
+                                except Exception:
                                     titulo = "Oferta Tech"
 
                                 texto_full = tarjeta.text
@@ -130,7 +130,7 @@ class RecolectorJooble:
                                 # 3. COMPAÑÍA
                                 try:
                                     compania = tarjeta.find_element(By.CSS_SELECTOR, "[data-test-name='_jobCardCompanyName']").text
-                                except:
+                                except Exception:
                                     compania = "Confidencial"
 
                                 self.datos.append({
@@ -146,7 +146,7 @@ class RecolectorJooble:
                                 })
                                 contador_rol += 1
                                 
-                            except: continue
+                            except Exception: continue
                 except Exception as e:
                     print(f"⚠️ Error cargando rol {rol}: {e}")
                     continue
@@ -157,10 +157,10 @@ class RecolectorJooble:
         finally:
             if driver:
                 try: driver.quit()
-                except: pass
+                except Exception: pass
             if display:
                 try: display.stop()
-                except: pass
+                except Exception: pass
             self.guardar_supabase()
 
     def guardar_supabase(self):

@@ -110,10 +110,17 @@ export interface ChatMensaje {
   session_id: string;
 }
 
+export interface FuenteChat {
+  titulo: string;
+  empresa: string;
+  url: string;
+}
+
 export interface ChatRespuesta {
   respuesta: string;
   ofertas_encontradas: number;
   rechazada: boolean;
+  fuentes?: FuenteChat[];
 }
 
 export interface FiltrosOfertas {
@@ -341,16 +348,6 @@ export async function enviarMensajeChat(data: ChatMensaje): Promise<ChatRespuest
 export async function getRolesDisponibles(): Promise<string[]> {
   const response = await fetch(`${API_BASE_URL}/roles-disponibles`);
   if (!response.ok) throw new Error('Error fetching roles');
-  return response.json();
-}
-
-/**
- * GET /api/ubicaciones
- * Obtener lista de ubicaciones/ciudades disponibles
- */
-export async function getUbicaciones(): Promise<string[]> {
-  const response = await fetch(`${API_BASE_URL}/ubicaciones`);
-  if (!response.ok) throw new Error('Error fetching ubicaciones');
   return response.json();
 }
 
