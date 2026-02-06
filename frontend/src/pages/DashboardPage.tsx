@@ -137,10 +137,6 @@ export default function DashboardPage() {
                 <StatCard
                   label="Ofertas Analizadas"
                   value={(stats?.total_ofertas ?? 0).toLocaleString()}
-                  change={{
-                    value: stats?.ofertas_variacion_porcentaje ?? 0,
-                    label: 'vs. mes anterior',
-                  }}
                   icon={<BarChart3 className="h-5 w-5" />}
                   variant="primary"
                 />
@@ -148,20 +144,12 @@ export default function DashboardPage() {
                   label="Salario Promedio"
                   value={`$${Math.round(stats?.salario_promedio ?? 0).toLocaleString()}`}
                   suffix="/mo"
-                  change={{
-                    value: stats?.salario_variacion_porcentaje ?? 0,
-                    label: 'vs. mes anterior',
-                  }}
                   icon={<FileText className="h-5 w-5" />}
                   variant="success"
                 />
                 <StatCard
                   label="Nivel de Demanda"
                   value={nivelDemandaLabel}
-                  change={{
-                    value: stats?.nuevas_vacantes_porcentaje ?? 0,
-                    label: 'nuevas vacantes',
-                  }}
                   icon={<Sparkles className="h-5 w-5" />}
                 />
               </div>
