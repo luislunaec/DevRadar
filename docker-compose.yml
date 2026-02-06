@@ -37,5 +37,5 @@ services:
     volumes:
       - ./.env:/app/.env:ro
     working_dir: /app/scraper
-    # Ejecución manual: docker compose run --rm scraper [días]
-    restart: "no"
+    # Cron ejecuta main.py cada día a las 23:59 (ver scraper/crontab)
+    restart: unless-stopped

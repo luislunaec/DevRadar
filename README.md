@@ -113,7 +113,6 @@ DevRadar/
 - Pandas
 - Requests
 - Supabase
-- Google Generative AI (Gemini)
 - LangChain
 
 **Infraestructura**

@@ -1,0 +1,5 @@
+# DevRadar scraper: ejecuta main.py cada día a las 23:59 (UTC)
+# Formato: minuto hora día mes día_semana comando
+SHELL=/bin/sh
+PATH=/usr/local/bin:/usr/bin:/bin
+59 23 * * * cd /app/scraper && python main.py 2 >> /proc/1/fd/1 2>> /proc/1/fd/2
