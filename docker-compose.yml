@@ -21,7 +21,7 @@ services:
       dockerfile: Dockerfile
       args:
         # URL pública del API (build-time para Vite). En deploy usar PUBLIC_API_URL.
-        VITE_API_URL: ${PUBLIC_API_URL:-http://217.216.89.228:8000/api}uta como root o usuario con sudo
+        VITE_API_URL: ${PUBLIC_API_URL:-http://217.216.89.228:8000/api}
     ports:
       - "8080:8080"
     depends_on:
